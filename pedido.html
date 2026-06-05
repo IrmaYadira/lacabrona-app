@@ -293,7 +293,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- PAGAR -->
 <div class="screen" id="sc-pagar">
   <div id="cuenta-abierta-box" class="cuenta-status"><div class="cs-title">✅ Cuenta abierta</div><div class="cs-info" id="cs-info">Tu cuenta está activa.</div></div>
-  <div id="cuenta-cerrada-box" class="cuenta-cerrada"><p style="color:#ef4444;font-weight:700;margin-bottom:4px">🔒 Cuenta cerrada por barra</p><p style="font-size:11px;color:var(--muted)">¡Gracias por tu visita! Vuelve pronto 🐐</p></div>
+  <div id="cuenta-cerrada-box" class="cuenta-cerrada"><p style="color:#ef4444;font-weight:700;margin-bottom:4px">🔒 Cuenta cerrada por barra</p><p style="font-size:11px;color:var(--muted)">¡Gracias por tu visita! Vuelve pronto 🐐</p><button class="btn-green" onclick="nuevaVisita()" style="margin-top:10px">+ Nueva visita</button></div>
   <div class="sec">Resumen de cuenta</div>
   <div id="cuenta-det"><p style="color:var(--muted);font-size:13px;padding:10px 0;text-align:center">Sin pedidos</p></div>
   <div class="trow"><span>Subtotal</span><span id="sub-pagar">$0</span></div>
@@ -406,9 +406,12 @@ function init(){
     cuentaId=localStorage.getItem('lc-cuentaId-v2');
     puntosActuales=parseInt(localStorage.getItem('lc-puntos-'+cliente.cel)||'0');
     ptsHistorial=JSON.parse(localStorage.getItem('lc-historial-'+cliente.cel)||'[]');
+    const rondasGuardadas=localStorage.getItem('lc-rondas-'+cuentaId);
+    if(rondasGuardadas){try{rondas=JSON.parse(rondasGuardadas);rondaNum=rondas.length+1;}catch(e){}}
     document.getElementById('overlay').classList.add('hide');
     actualizarHdr();
     renderLealtad();
+    renderHist();
     if(cuentaId)escucharCuenta();
   }
 }
@@ -431,11 +434,12 @@ function selMesaOv(el,m){mesaSelOv=m;document.querySelectorAll('#ov-mesas .mg').
 function completarRegistro(){
   const nombre=document.getElementById('reg-nombre').value.trim();
   const cel=document.getElementById('reg-cel').value.trim();
+  const celLimpio=cel.replace(/\s/g,'');
   if(!nombre){showToast('Escribe tu nombre');return;}
-  if(!cel||cel.length<10){showToast('Escribe tu número de celular');return;}
+  if(!celLimpio||celLimpio.length<10){showToast('Escribe tu número de celular (10 dígitos)');return;}
   if(!tipoSel){showToast('Selecciona el tipo de orden');return;}
   if(tipoSel!=='llevar'&&!mesaSelOv){showToast('Selecciona tu mesa');return;}
-  cliente={nombre,cel,area:areaSelOv,mesa:mesaSelOv||'Para llevar',tipo:tipoSel};
+  cliente={nombre,cel:celLimpio,area:areaSelOv,mesa:mesaSelOv||'Para llevar',tipo:tipoSel};
   localStorage.setItem('lc-cliente-v2',JSON.stringify(cliente));
   // Cargar puntos guardados por celular
   puntosActuales=parseInt(localStorage.getItem('lc-puntos-'+cel)||'0');
@@ -537,6 +541,7 @@ function escucharCuenta(){
       if(data.estado==='pagada'||data.estado==='cerrada'){
         if(!cuentaCerrada){
           cuentaCerrada=true;
+          localStorage.removeItem('lc-rondas-'+cuentaId);
           // Dar puntos al cerrar cuenta
           const total=rondas.reduce((s,r)=>s+r.total,0);
           agregarPuntos(total);
@@ -591,6 +596,7 @@ function enviar(){
   const hora=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   const ronda={r:rondaNum,items:items.map(k=>({k,q:qty[k],p:PRECIOS[k],notes:getModNotes(k),exT:itemExtras[k]?Object.values(itemExtras[k]).reduce((a,b)=>a+b,0):0})),total,mesa:cliente.mesa,area:cliente.area,tipo:cliente.tipo,nombre:cliente.nombre,cel:cliente.cel,hora,estado:'pendiente',timestamp:Date.now()};
   rondas.push(ronda);
+  if(cuentaId)localStorage.setItem('lc-rondas-'+cuentaId,JSON.stringify(rondas));
   fetch(FB+'/pedidos.json',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ronda)}).catch(()=>{});
   if(cuentaId){const totalAcum=rondas.reduce((s,r)=>s+r.total,0);fetch(FB+'/cuentas/'+cuentaId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({total:totalAcum,rondas:rondas.length,ultimaRonda:hora})}).catch(()=>{});}
   renderHist();
@@ -656,6 +662,12 @@ function goTab(t){
   document.querySelectorAll('.tab').forEach((b,i)=>{b.classList.toggle('on',['menu','orden','pagar','lealtad'][i]===t);});
   if(t==='pagar')renderCuenta();
   if(t==='lealtad')renderLealtad();
+}
+function nuevaVisita(){
+  localStorage.removeItem('lc-cliente-v2');
+  localStorage.removeItem('lc-cuentaId-v2');
+  if(cuentaId)localStorage.removeItem('lc-rondas-'+cuentaId);
+  location.reload();
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 init();
