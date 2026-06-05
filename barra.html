@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cabrona – Barra</title>
+<style>
+:root{--gold:#f5a623;--dark:#0a0a0a;--card:#1a1a1a;--border:#2a2a2a;--green:#4ade80;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--dark);color:#fff;min-height:100vh}
+.hdr{background:#0a0a1a;border-bottom:3px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.badge{color:#000;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:1px}
+.b-barra{background:var(--gold)}
+.b-canje{background:var(--purple);color:#fff}
+.b-solicitud{background:var(--green);color:#000}
+.title{font-size:18px;font-weight:800;color:var(--gold)}
+.clock{font-size:13px;color:rgba(255,255,255,0.4);font-variant-numeric:tabular-nums}
+.tabs-bar{display:flex;background:#111;border-bottom:1px solid #222}
+.tb{flex:1;padding:12px 8px;font-size:12px;color:#555;cursor:pointer;border-bottom:2px solid transparent;text-align:center;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tb.on{color:var(--gold);border-bottom-color:var(--gold)}
+.section-panel{display:none;padding:16px}
+.section-panel.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;border:2px solid var(--border);overflow:hidden}
+.card.nuevo{animation:pulse 1s ease-in-out 3}
+.card.canje-card{border-color:var(--purple)}
+.card.solicitud-card{border-color:var(--green)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.card-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #222}
+.mesa-info{font-size:13px;font-weight:700}
+.hora-info{font-size:10px;color:#555}
+.card-body{padding:12px 14px}
+.prod-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a}
+.prod-item:last-child{border-bottom:none}
+.prod-qty{min-width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.q-gold{background:var(--gold);color:#000}
+.q-purple{background:var(--purple);color:#fff}
+.prod-name{flex:1;font-size:12px;line-height:1.4}
+.card-footer{padding:8px 14px;background:#111;display:flex;gap:6px}
+.btn{flex:1;padding:9px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn:active{opacity:.8}
+.btn-gold{background:var(--gold);color:#000}
+.btn-green{background:var(--green);color:#000}
+.btn-red{background:var(--red);color:#fff}
+.btn-ghost{background:none;border:1px solid #333;color:#666}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:#333;gap:10px;text-align:center}
+.empty-icon{font-size:48px}
+.total-tag{display:inline-block;background:#1a1a1a;border:1px solid #333;border-radius:6px;padding:2px 8px;font-size:12px;color:var(--gold);margin-left:8px}
+.pts-tag{display:inline-block;background:#1a1a2a;border:1px solid #333;border-radius:6px;padding:2px 8px;font-size:11px;color:var(--purple)}
+.status-bar{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:8px 16px;display:flex;align-items:center;gap:12px;font-size:11px;color:#444;position:sticky;bottom:0}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.cnt-badge{background:#333;border-radius:10px;padding:1px 7px;font-size:11px;color:#aaa;margin-left:4px}
+.cnt-badge.activo{background:#2a1a00;color:var(--gold)}
+.metodo-tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:6px}
+.m-efe{background:#0a2a0a;color:var(--green)}
+.m-tar{background:#0a0a2a;color:var(--blue)}
+.m-spe{background:#1a0a2a;color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="badge b-barra">🍺 Barra</div>
+    <div class="title">La Cabrona</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="cnt-badge activo" id="cnt-pedidos">Bebidas: 0</span>
+    <span class="cnt-badge" id="cnt-solicitudes">Cuentas: 0</span>
+    <span class="cnt-badge" id="cnt-canjes">Canjes: 0</span>
+    <div class="clock" id="clock">00:00</div>
+  </div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tb on" onclick="goSec('bebidas')">🍺 Bebidas</button>
+  <button class="tb" onclick="goSec('solicitudes')">💳 Cuentas</button>
+  <button class="tb" onclick="goSec('canjes')">🎁 Canjes</button>
+</div>
+
+<div class="section-panel on" id="sec-bebidas">
+  <div id="grid-bebidas" class="grid">
+    <div class="empty"><div class="empty-icon">✅</div><div>Sin pedidos de bebidas</div></div>
+  </div>
+</div>
+
+<div class="section-panel" id="sec-solicitudes">
+  <div id="grid-solicitudes" class="grid">
+    <div class="empty"><div class="empty-icon">💤</div><div>Sin solicitudes de cuenta</div></div>
+  </div>
+</div>
+
+<div class="section-panel" id="sec-canjes">
+  <div id="grid-canjes" class="grid">
+    <div class="empty"><div class="empty-icon">⭐</div><div>Sin canjes pendientes</div></div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="dot"></div>
+  <span>En línea · Firebase activo</span>
+  <span style="margin-left:auto">La Cabrona · Barra</span>
+</div>
+
+<script>
+const FB='https://lacabrona-23295-default-rtdb.firebaseio.com';
+const NOMBRES={tarroOsc:'Tarro oscura',tarroCla:'Tarro clara',media:'Media cerveza',modelo:'Modelo 1/2',pacifico:'Medio Pacífico',mega:'Mega cerveza',megapac:'Mega Pacífico',michelob:'Michelob Ultra',caguama:'Caguama',cubeta:'Cubeta Corona (10)',cubeta2:'Cubeta Tecate (10)',sky30:'Sky/Centenario 30ml',skyprep:'Sky prep.',azul30:'Azul/7Leguas 30ml',azulprep:'Azul prep.',maestro30:'Maestro Doble',absolut:'Absolut Vodka',charro:'Charro negro/güero',azulit:'Azulitos 1/2 lt',redbull:'Red Bull',mich1lt:'Michelada 1 lt',michcam:'Michelada c/camarón',vasochel:'Vaso chelado',vasomich:'Vaso michelado',clam12:'Clamatado 1/2',clamcomp:'Clamatado completo',rusa:'Rusa/Agua mineral',lata:'Lata refresco',newmix:'New Mix',jugo:'Vaso de jugo',suero:'Suero Electrolit',te:'Té Arizona',bolis:'Bolis de tejuino'};
+const BARRA_KEYS=Object.keys(NOMBRES);
+let pedidos={},solicitudes={},canjes={};
+
+function clock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
+setInterval(clock,1000);clock();
+
+function poll(){
+  fetch(FB+'/pedidos.json').then(r=>r.json()).then(d=>{pedidos=d||{};renderBebidas();}).catch(()=>{});
+  fetch(FB+'/solicitudes.json').then(r=>r.json()).then(d=>{solicitudes=d||{};renderSolicitudes();}).catch(()=>{});
+  fetch(FB+'/canjes.json').then(r=>r.json()).then(d=>{canjes=d||{};renderCanjes();}).catch(()=>{});
+}
+poll();setInterval(poll,4000);
+
+function renderBebidas(){
+  const grid=document.getElementById('grid-bebidas');
+  const keys=Object.keys(pedidos).filter(k=>pedidos[k]&&pedidos[k].estado==='pendiente');
+  document.getElementById('cnt-pedidos').textContent='Bebidas: '+keys.length;
+  document.getElementById('cnt-pedidos').className='cnt-badge'+(keys.length?' activo':'');
+  if(!keys.length){grid.innerHTML='<div class="empty"><div class="empty-icon">✅</div><div>Sin pedidos de bebidas</div></div>';return;}
+  grid.innerHTML=keys.map(id=>{
+    const p=pedidos[id];
+    const items=(p.items||[]).filter(i=>BARRA_KEYS.includes(i.k));
+    if(!items.length)return '';
+    const tipoLabel=p.tipo==='llevar'?'🛍️':p.tipo==='mixto'?'🔀':'🍽️';
+    return `<div class="card nuevo">
+      <div class="card-hdr">
+        <div><span style="color:var(--gold);font-weight:700">${tipoLabel} ${p.mesa||''}${p.area?' · '+p.area:''}</span>${p.nombre?'<span style="font-size:11px;color:#aaa;display:block">'+p.nombre+'</span>':''}</div>
+        <div style="text-align:right"><div class="hora-info">${p.hora||''}</div><div style="font-size:10px;color:#555">Ronda ${p.r||1}</div></div>
+      </div>
+      <div class="card-body">${items.map(i=>`<div class="prod-item"><div class="prod-qty q-gold">${i.q}</div><div class="prod-name">${NOMBRES[i.k]||i.k}</div></div>`).join('')}</div>
+      <div class="card-footer">
+        <button class="btn btn-gold" onclick="marcarServido('${id}')">✓ Servido</button>
+        <button class="btn btn-ghost" onclick="eliminarPedido('${id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSolicitudes(){
+  const grid=document.getElementById('grid-solicitudes');
+  const keys=Object.keys(solicitudes).filter(k=>solicitudes[k]&&solicitudes[k].estado==='pendiente');
+  document.getElementById('cnt-solicitudes').textContent='Cuentas: '+keys.length;
+  if(!keys.length){grid.innerHTML='<div class="empty"><div class="empty-icon">💤</div><div>Sin solicitudes de cuenta</div></div>';return;}
+  grid.innerHTML=keys.map(id=>{
+    const s=solicitudes[id];
+    const metLabel=s.metodo==='efectivo'?'💵 Efectivo':s.metodo==='tarjeta'?'💳 Tarjeta':s.metodo==='spei'?'🏦 SPEI':'👥 Dividir';
+    const metClass=s.metodo==='efectivo'?'m-efe':s.metodo==='tarjeta'?'m-tar':s.metodo==='spei'?'m-spe':'';
+    const ptsGanar=s.ptsGanar||0;
+    return `<div class="card solicitud-card nuevo">
+      <div class="card-hdr">
+        <div><span style="color:var(--green);font-weight:700">📍 ${s.mesa||''} · ${s.area||''}</span><div style="font-size:11px;color:#aaa;margin-top:2px">${s.nombre||''} · ${s.cel||''}</div></div>
+        <div style="text-align:right"><span class="metodo-tag ${metClass}">${metLabel}</span></div>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span style="color:#aaa">Subtotal</span><span>$${s.subtotal||0}</span></div>
+        ${s.propina?`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:#aaa"><span>Propina</span><span>$${s.propina}</span></div>`:''}
+        ${s.comision?`<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:#f5a623"><span>Comisión 3%</span><span>-$${s.comision}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:8px 0;border-top:1px solid #222;margin-top:4px"><span>TOTAL</span><span style="color:var(--gold)">$${s.total||0}</span></div>
+        ${ptsGanar?`<div style="font-size:11px;color:var(--purple);margin-top:4px">⭐ El cliente ganará +${ptsGanar} puntos al confirmar</div>`:''}
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-green" onclick="confirmarPago('${id}','${s.cuentaId||''}')">✓ Cobrado — Cerrar cuenta</button>
+        <button class="btn btn-ghost" onclick="eliminarSolicitud('${id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCanjes(){
+  const grid=document.getElementById('grid-canjes');
+  const keys=Object.keys(canjes).filter(k=>canjes[k]&&canjes[k].estado==='pendiente');
+  document.getElementById('cnt-canjes').textContent='Canjes: '+keys.length;
+  if(!keys.length){grid.innerHTML='<div class="empty"><div class="empty-icon">⭐</div><div>Sin canjes pendientes</div></div>';return;}
+  grid.innerHTML=keys.map(id=>{
+    const c=canjes[id];
+    return `<div class="card canje-card nuevo">
+      <div class="card-hdr">
+        <div><span style="color:var(--purple);font-weight:700">🎁 Canje de puntos</span><div style="font-size:11px;color:#aaa;margin-top:2px">${c.nombre||''} · ${c.mesa||''}</div></div>
+        <div class="hora-info">${new Date(c.timestamp).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="card-body">
+        <div style="background:#1a1a2a;border-radius:8px;padding:10px;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">${c.premio||''}</div>
+          <div style="font-size:12px;color:#aaa">${c.descripcion||''}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:#aaa">Puntos usados</span><span style="color:var(--purple)">-${c.ptsUsados||0} pts</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:3px">
+          <span style="color:#aaa">Puntos restantes</span><span style="color:var(--gold)">${c.ptsRestantes||0} pts</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-green" onclick="confirmarCanje('${id}')">✓ Entregado al cliente</button>
+        <button class="btn btn-ghost" onclick="eliminarCanje('${id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function marcarServido(id){
+  fetch(FB+'/pedidos/'+id+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:'servido'})})
+    .then(()=>{delete pedidos[id];renderBebidas();}).catch(()=>{delete pedidos[id];renderBebidas();});
+}
+function eliminarPedido(id){delete pedidos[id];renderBebidas();}
+
+function confirmarPago(solicitudId,cuentaId){
+  fetch(FB+'/solicitudes/'+solicitudId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:'pagado'})}).catch(()=>{});
+  if(cuentaId)fetch(FB+'/cuentas/'+cuentaId+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:'pagada'})}).catch(()=>{});
+  delete solicitudes[solicitudId];
+  renderSolicitudes();
+}
+function eliminarSolicitud(id){delete solicitudes[id];renderSolicitudes();}
+
+function confirmarCanje(id){
+  fetch(FB+'/canjes/'+id+'.json',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado:'entregado'})}).catch(()=>{});
+  delete canjes[id];renderCanjes();
+}
+function eliminarCanje(id){delete canjes[id];renderCanjes();}
+
+function goSec(s){
+  ['bebidas','solicitudes','canjes'].forEach(id=>{document.getElementById('sec-'+id).classList.toggle('on',id===s);});
+  document.querySelectorAll('.tb').forEach((b,i)=>{b.classList.toggle('on',['bebidas','solicitudes','canjes'][i]===s);});
+}
+</script>
+</body>
+</html>
