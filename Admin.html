@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Cabrona – Admin</title>
+<style>
+:root{--gold:#f5a623;--dark:#0d0d0d;--card:#1a1a1a;--border:#2a2a2a;--green:#4ade80;--red:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--dark);color:#fff;min-height:100vh}
+.hdr{background:#1a0a00;border-bottom:3px solid var(--gold);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.title{font-size:18px;font-weight:800;color:var(--gold)}
+.badge{background:var(--gold);color:#000;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.tabs{display:flex;background:#111;border-bottom:1px solid var(--border)}
+.tab{padding:12px 20px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.screen{display:none;padding:20px}
+.screen.on{display:block}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border)}
+.metric-lbl{font-size:11px;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.metric-val{font-size:24px;font-weight:700}
+.metric-val.green{color:var(--green)}
+.metric-val.gold{color:var(--gold)}
+.metric-val.red{color:var(--red)}
+.section{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:20px 0 10px}
+.table{width:100%;border-collapse:collapse}
+.table th{font-size:11px;color:#666;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);font-weight:500}
+.table td{font-size:13px;padding:10px 12px;border-bottom:1px solid #1a1a1a}
+.table tr:last-child td{border-bottom:none}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+.tag-efe{background:#1a2a1a;color:var(--green)}
+.tag-tar{background:#1a1a2a;color:#60a5fa}
+.tag-spe{background:#1a1a2a;color:#a78bfa}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px}
+.card-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1a1a1a}
+.card-row:last-child{border-bottom:none}
+.row-lbl{font-size:13px;color:#aaa}
+.row-val{font-size:14px;font-weight:600}
+.row-val.green{color:var(--green)}
+.row-val.gold{color:var(--gold)}
+.row-val.red{color:var(--red)}
+.btn{padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .2s}
+.btn:active{opacity:.8}
+.btn-gold{background:var(--gold);color:#000}
+.btn-outline{background:none;border:1px solid var(--gold);color:var(--gold)}
+.btn-red{background:var(--red);color:#fff}
+.mesa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.mesa-card{background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border);text-align:center;cursor:pointer}
+.mesa-card.ocupada{border-color:var(--gold);background:#1a1200}
+.mesa-card.libre{border-color:#2a2a2a}
+.mesa-nombre{font-size:12px;font-weight:600;margin-bottom:4px}
+.mesa-total{font-size:11px;color:var(--gold)}
+.mesa-estado{font-size:10px;color:#666}
+.input-row{display:flex;gap:10px;margin-bottom:12px}
+input,select{background:#222;border:1px solid var(--border);color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+.corte-resumen{background:#0a1a0a;border:1px solid #1a3a1a;border-radius:12px;padding:16px;margin-bottom:16px}
+.corte-title{font-size:14px;font-weight:700;color:var(--green);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="title">La Cabrona</div>
+    <div class="badge">Admin</div>
+  </div>
+  <div style="font-size:12px;color:#666" id="fecha"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="goTab('corte')">💰 Corte del día</div>
+  <div class="tab" onclick="goTab('mesas')">🗺️ Mesas</div>
+  <div class="tab" onclick="goTab('pedidos')">📋 Pedidos</div>
+  <div class="tab" onclick="goTab('config')">⚙️ Config</div>
+</div>
+
+<!-- CORTE -->
+<div class="screen on" id="sc-corte">
+  <div class="corte-resumen">
+    <div class="corte-title">📊 Corte del día — <span id="fecha-corte"></span></div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-lbl">Venta total</div><div class="metric-val green" id="vt">$0</div></div>
+      <div class="metric"><div class="metric-lbl">Cuentas</div><div class="metric-val gold" id="nc">0</div></div>
+      <div class="metric"><div class="metric-lbl">Ticket prom.</div><div class="metric-val" id="tp">$0</div></div>
+      <div class="metric"><div class="metric-lbl">Propinas</div><div class="metric-val green" id="propinas">$0</div></div>
+    </div>
+  </div>
+
+  <div class="section">Por método de pago</div>
+  <div class="card">
+    <div class="card-row"><span class="row-lbl">💵 Efectivo</span><span class="row-val green" id="c-efe">$0</span></div>
+    <div class="card-row"><span class="row-lbl">💳 Tarjeta (bruto)</span><span class="row-val" id="c-tar">$0</span></div>
+    <div class="card-row"><span class="row-lbl">⚠️ Comisiones 3%</span><span class="row-val red" id="c-com">−$0</span></div>
+    <div class="card-row"><span class="row-lbl">💳 Tarjeta (neto)</span><span class="row-val green" id="c-tar-neto">$0</span></div>
+    <div class="card-row"><span class="row-lbl">🏦 SPEI / Transferencia</span><span class="row-val" id="c-spe">$0</span></div>
+  </div>
+
+  <div class="section">Neto a depositar</div>
+  <div class="card">
+    <div class="card-row" style="background:#0a1a0a"><span class="row-lbl" style="font-weight:700;color:#fff">Total neto (ventas − comisiones)</span><span class="row-val green" style="font-size:18px" id="c-neto">$0</span></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button class="btn btn-gold" onclick="simCorte()" style="flex:1">Simular ventas de prueba</button>
+    <button class="btn btn-outline" onclick="limpiarCorte()" style="flex:1">Limpiar corte</button>
+  </div>
+  <button class="btn btn-outline" onclick="exportarCorte()" style="width:100%;margin-top:8px">📤 Exportar corte por WhatsApp</button>
+</div>
+
+<!-- MESAS -->
+<div class="screen" id="sc-mesas">
+  <div class="section">Estado de mesas en tiempo real</div>
+  <div id="mesas-grid" class="mesa-grid"></div>
+</div>
+
+<!-- PEDIDOS -->
+<div class="screen" id="sc-pedidos">
+  <div class="section">Últimos pedidos del día</div>
+  <div id="pedidos-list"></div>
+</div>
+
+<!-- CONFIG -->
+<div class="screen" id="sc-config">
+  <div class="section">Configuración del sistema</div>
+  <div class="card" style="padding:16px">
+    <p style="font-size:13px;color:#aaa;margin-bottom:12px">Firebase URL (base de datos en tiempo real)</p>
+    <input type="text" id="fb-url" placeholder="https://tu-app.firebaseio.com" value="">
+    <button class="btn btn-gold" style="width:100%;margin-top:10px" onclick="guardarFB()">Guardar configuración</button>
+  </div>
+  <div class="section">Links del sistema</div>
+  <div class="card">
+    <div class="card-row"><span class="row-lbl">📱 App cliente</span><a href="/index.html" style="color:var(--gold);font-size:12px">index.html</a></div>
+    <div class="card-row"><span class="row-lbl">🍽️ Pantalla cocina</span><a href="/cocina.html" style="color:var(--gold);font-size:12px">cocina.html</a></div>
+    <div class="card-row"><span class="row-lbl">🍺 Pantalla barra</span><a href="/barra.html" style="color:var(--gold);font-size:12px">barra.html</a></div>
+    <div class="card-row"><span class="row-lbl">⚙️ Panel admin</span><a href="/admin.html" style="color:var(--gold);font-size:12px">admin.html</a></div>
+  </div>
+  <div class="section">Instrucciones Firebase</div>
+  <div style="background:#1a1a1a;border-radius:10px;padding:14px;font-size:12px;color:#aaa;line-height:1.8">
+    1. Ve a <span style="color:var(--gold)">console.firebase.google.com</span><br>
+    2. Crea un proyecto nuevo → llámalo "lacabrona"<br>
+    3. Activa <span style="color:var(--gold)">Realtime Database</span> en modo prueba<br>
+    4. Copia la URL (termina en .firebaseio.com)<br>
+    5. Pégala arriba y guarda<br>
+    6. Repite en cocina.html y barra.html
+  </div>
+</div>
+
+<script>
+let corte={efectivo:0,tarjeta:0,spei:0,comisiones:0,propinas:0,cuentas:0};
+
+const TODAS_MESAS=['Barra-1','Barra-2','Barra-3','Barra-4','Sillón 1-2','Sillón 3-4','Periquera 1','Periquera 2','Mesa 1','Mesa T-1','Mesa T-2','Mesa T-3','Mesa T-4','Mesa T-5','Sillón 5','Sillón 6','Sillón 7','Sillón 8','Sillón 9','Periquera A','Periquera B','Periquera C','Periquera D','Billar 1','Billar 2','Futbolito'];
+let mesasOcupadas={};
+
+function init(){
+  const hoy=new Date();
+  const fechaStr=hoy.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('fecha').textContent=fechaStr;
+  document.getElementById('fecha-corte').textContent=hoy.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+  renderMesas();
+  const saved=localStorage.getItem('lc-corte');
+  if(saved){corte=JSON.parse(saved);renderCorte();}
+  const fbUrl=localStorage.getItem('lc-firebase');
+  if(fbUrl)document.getElementById('fb-url').value=fbUrl;
+}
+
+function renderCorte(){
+  const tot=corte.efectivo+corte.tarjeta+corte.spei;
+  const tarNeto=corte.tarjeta-corte.comisiones;
+  const neto=corte.efectivo+tarNeto+corte.spei;
+  document.getElementById('vt').textContent='$'+tot;
+  document.getElementById('nc').textContent=corte.cuentas;
+  document.getElementById('tp').textContent=corte.cuentas?'$'+Math.round(tot/corte.cuentas):'$0';
+  document.getElementById('propinas').textContent='$'+corte.propinas;
+  document.getElementById('c-efe').textContent='$'+corte.efectivo;
+  document.getElementById('c-tar').textContent='$'+corte.tarjeta;
+  document.getElementById('c-com').textContent='−$'+corte.comisiones;
+  document.getElementById('c-tar-neto').textContent='$'+tarNeto;
+  document.getElementById('c-spe').textContent='$'+corte.spei;
+  document.getElementById('c-neto').textContent='$'+neto;
+  localStorage.setItem('lc-corte',JSON.stringify(corte));
+}
+
+function simCorte(){
+  corte={efectivo:4250,tarjeta:3120,spei:980,comisiones:Math.round(3120*0.03),propinas:640,cuentas:18};
+  renderCorte();
+}
+
+function limpiarCorte(){
+  if(confirm('¿Limpiar el corte del día?')){corte={efectivo:0,tarjeta:0,spei:0,comisiones:0,propinas:0,cuentas:0};renderCorte();}
+}
+
+function exportarCorte(){
+  const hoy=new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const tot=corte.efectivo+corte.tarjeta+corte.spei;
+  const neto=tot-corte.comisiones;
+  const msg=[
+    '🐐 *La Cabrona Alitas & Beer*',
+    '📊 *Corte del día — '+hoy+'*','',
+    '💰 Venta total: $'+tot,
+    '🧾 Cuentas cerradas: '+corte.cuentas,
+    '📈 Ticket promedio: $'+(corte.cuentas?Math.round(tot/corte.cuentas):0),'',
+    '— Por método de pago —',
+    '💵 Efectivo: $'+corte.efectivo,
+    '💳 Tarjeta: $'+corte.tarjeta+' (comisión −$'+corte.comisiones+')',
+    '🏦 SPEI: $'+corte.spei,'',
+    '🙏 Propinas totales: $'+corte.propinas,'',
+    '✅ *Neto a depositar: $'+neto+'*'
+  ].join('\n');
+  const url='https://wa.me/523338043112?text='+encodeURIComponent(msg);
+  window.open(url,'_blank');
+}
+
+function renderMesas(){
+  const grid=document.getElementById('mesas-grid');
+  grid.innerHTML=TODAS_MESAS.map(m=>{
+    const ocu=mesasOcupadas[m];
+    return `<div class="mesa-card ${ocu?'ocupada':'libre'}" onclick="toggleMesa('${m}')">
+      <div class="mesa-nombre">${m}</div>
+      <div class="mesa-total">${ocu?'$'+ocu:'libre'}</div>
+      <div class="mesa-estado">${ocu?'● ocupada':'○ disponible'}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMesa(m){
+  if(mesasOcupadas[m]){delete mesasOcupadas[m];}
+  else{const t=prompt('Consumo actual de '+m+' ($):');if(t&&!isNaN(t))mesasOcupadas[m]=parseInt(t);}
+  renderMesas();
+}
+
+function goTab(t){
+  ['corte','mesas','pedidos','config'].forEach(id=>{document.getElementById('sc-'+id).classList.toggle('on',id===t);});
+  document.querySelectorAll('.tab').forEach((b,i)=>{b.classList.toggle('on',['corte','mesas','pedidos','config'][i]===t);});
+}
+
+function guardarFB(){
+  const url=document.getElementById('fb-url').value.trim();
+  if(url){localStorage.setItem('lc-firebase',url);alert('Firebase guardado ✓\nRecuerda actualizar también cocina.html y barra.html');}
+}
+
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='cobro'){
+    const d=e.data;
+    corte.cuentas++;
+    corte.propinas+=(d.propina||0);
+    if(d.metodo==='efectivo')corte.efectivo+=(d.total||0);
+    else if(d.metodo==='tarjeta'){corte.tarjeta+=(d.total||0);corte.comisiones+=(d.comision||0);}
+    else if(d.metodo==='spei')corte.spei+=(d.total||0);
+    renderCorte();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
