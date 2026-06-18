@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Redirigiendo… | La Cabrona Alitas & Beer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, follow" />
+  <link rel="canonical" href="https://barlacabrona.com/" />
+  <!-- SPA Fallback: guarda la URL original y redirige al index.html -->
+  <script>
+    (function() {
+      try {
+        sessionStorage.setItem('__spa_redirect', window.location.pathname + window.location.search + window.location.hash);
+      } catch (e) {}
+      window.location.replace('/');
+    })();
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #f59e0b;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 64px;
+      font-weight: 900;
+      color: #f59e0b;
+      line-height: 1;
+      margin-bottom: 8px;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    p {
+      font-size: 16px;
+      color: #9ca3af;
+      max-width: 420px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    a.home {
+      background: #f59e0b;
+      color: #111827;
+    }
+    a.home:hover { background: #d97706; }
+    a.menu {
+      background: #1f2937;
+      color: #f9fafb;
+      border: 1px solid #374151;
+    }
+    a.menu:hover { background: #374151; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+  </style>
+</head>
+<body>
+  <noscript>
+    <img
+      src="https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285"
+      alt="La Cabrona Alitas & Beer"
+      class="logo"
+      width="80"
+      height="80"
+    />
+    <h1>404</h1>
+    <p>
+      Esta página no existe o ya no está disponible. Pero no te preocupes — vuelve al inicio
+      y sigue disfrutando de las mejores alitas, cervezas y billar en Zapopan.
+    </p>
+    <div class="links">
+      <a href="/" class="home">Ir al inicio</a>
+      <a href="/menu" class="menu">Ver el menú</a>
+    </div>
+  </noscript>
+
+  <!-- SEO: contenido indexable para crawlers -->
+  <div class="sr-only">
+    <h2>La Cabrona Alitas &amp; Beer — Zapopan, Jalisco</h2>
+    <p>Bar de alitas y cerveza en Sinaloa 690, Col. El Mante, Zapopan. Alitas, boneless, hamburguesas, cerveza de barril, billar y más.</p>
+    <strong>Menú</strong>: <a href="/menu">Ver menú completo</a>
+    <strong>Reservas</strong>: <a href="/reservas">Reservar mesa</a>
+    <strong>Billar</strong>: <a href="/billar">Mesas de billar</a>
+  </div>
+</body>
+</html>

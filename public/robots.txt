@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Páginas privadas — no indexar
+Disallow: /admin
+Disallow: /pos
+Disallow: /bienvenida
+Disallow: /cuenta
+Disallow: /gracias
+Disallow: /mi-tarjeta
+Disallow: /qr
+
+Sitemap: https://example.com/sitemap.xml

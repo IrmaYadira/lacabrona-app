@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Protección global contra scroll horizontal — DEBE ir después de @tailwind para ganar especificidad */
+html, body {
+  overflow-x: hidden !important;
+  position: relative;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Animaciones globales para evitar style tags inline en componentes ── */
+@keyframes fav-pop {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(1.35); }
+  40%  { transform: scale(0.9); }
+  60%  { transform: scale(1.15); }
+  80%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.animate-fav-pop {
+  animation: fav-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes cat-highlight {
+  0% { background-color: rgba(251, 191, 36, 0.12); }
+  70% { background-color: rgba(251, 191, 36, 0.04); }
+  100% { background-color: transparent; }
+}
+
+.animate-cat-highlight {
+  animation: cat-highlight 1.5s ease-out forwards;
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) translateX(var(--drift, 0px)) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti-particle {
+  animation: confetti-fall ease-out forwards;
+}
+
+/* Animacion sutil de pulse para boton Ver premios cuando hay recompensas desbloqueadas */
+@keyframes reward-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 8px rgba(245, 158, 11, 0);
+  }
+}
+
+.animate-reward-pulse {
+  animation: reward-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  animation: shimmer 1.8s ease-in-out infinite;
+  transform: translateX(-100%);
+}
+
+.animate-shimmer-alt::after {
+  animation-delay: 0.6s;
+}
+
+.animate-shimmer-alt-2::after {
+  animation-delay: 1.2s;
+}
+
+/* ── Optimización de renderizado: saltar secciones fuera de pantalla ── */
+/* Mejora drásticamente LCP y TBT sin tocar imágenes */
+/* NOTA: Desactivado temporalmente — content-visibility puede causar que Google no indexe contenido below-the-fold */
+/* section[id] { content-visibility: auto; contain-intrinsic-size: auto 500px; } */
+
+/* El Hero es lo primero que se ve, no debe saltarse */
+/* section#hero { content-visibility: visible; } */
