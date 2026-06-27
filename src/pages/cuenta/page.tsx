@@ -76,10 +76,11 @@ interface ToastNotif {
 }
 
 const TIP_OPTIONS = [
-  { label: 'Sin propina', pct: 0 },
   { label: '10%', pct: 10 },
   { label: '15%', pct: 15 },
   { label: '20%', pct: 20 },
+  { label: 'Otra $', pct: -1 },
+  { label: 'Sin propina', pct: 0 },
 ];
 
 const PAYMENT_METHODS = [
@@ -330,19 +331,25 @@ function CallWaiterButton({ spot, area, accountId }: { spot?: string; area?: str
 // ── Sección de Propina y Forma de Pago ──
 interface TipPaymentSectionProps {
   subtotal: number;
-  selectedTip: number;
-  onTipChange: (pct: number) => void;
+  selectedTip: number | 'custom';
+  onTipChange: (pct: number | 'custom') => void;
+  customTipAmount: string;
+  onCustomTipAmountChange: (val: string) => void;
   selectedPayment: string;
   onPaymentChange: (id: string) => void;
   receiptUrl: string | null;
   onReceiptChange: (url: string | null) => void;
 }
 
-function TipPaymentSection({ subtotal, selectedTip, onTipChange, selectedPayment, onPaymentChange, receiptUrl, onReceiptChange }: TipPaymentSectionProps) {
+function TipPaymentSection({ subtotal, selectedTip, onTipChange, customTipAmount, onCustomTipAmountChange, selectedPayment, onPaymentChange, receiptUrl, onReceiptChange }: TipPaymentSectionProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const tipAmount = subtotal * (selectedTip / 100);
+  const isCustom = selectedTip === 'custom';
+  const tipAmount = isCustom
+    ? (parseFloat(customTipAmount) || 0)
+    : subtotal * ((selectedTip as number) / 100);
   const grandTotal = subtotal + tipAmount;
+  const tipLabel = isCustom ? 'Propina personalizada' : selectedTip > 0 ? `Propina ${selectedTip}%` : '';
 
   return (
     <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800">
@@ -354,8 +361,9 @@ function TipPaymentSection({ subtotal, selectedTip, onTipChange, selectedPayment
           </div>
           <p className="text-white font-black text-sm uppercase tracking-wide">¿Dejar propina?</p>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          {TIP_OPTIONS.map(opt => (
+        {/* Fila 1: porcentajes */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {TIP_OPTIONS.filter(o => o.pct > 0).map(opt => (
             <button
               key={opt.pct}
               onClick={() => onTipChange(opt.pct)}
@@ -369,9 +377,47 @@ function TipPaymentSection({ subtotal, selectedTip, onTipChange, selectedPayment
             </button>
           ))}
         </div>
-        {selectedTip > 0 && (
+        {/* Fila 2: Otra cantidad + Sin propina */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onTipChange('custom')}
+            className={`py-2.5 rounded-xl text-sm font-black cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+              isCustom
+                ? 'bg-amber-500 text-white'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            <i className="ri-edit-line mr-1 text-xs" />Otra $
+          </button>
+          <button
+            onClick={() => onTipChange(0)}
+            className={`py-2.5 rounded-xl text-sm font-black cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+              selectedTip === 0
+                ? 'bg-gray-600 text-white'
+                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            Sin propina
+          </button>
+        </div>
+        {/* Input para cantidad personalizada */}
+        {isCustom && (
+          <div className="mt-3 relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+            <input
+              type="number"
+              value={customTipAmount}
+              onChange={e => onCustomTipAmountChange(e.target.value)}
+              placeholder="0.00"
+              min="0"
+              step="1"
+              className="w-full pl-7 pr-3 py-2.5 bg-gray-800 border border-amber-500/50 focus:border-amber-400 rounded-xl text-white text-sm font-bold outline-none transition-colors placeholder-gray-600"
+            />
+          </div>
+        )}
+        {tipAmount > 0 && (
           <div className="mt-3 flex items-center justify-between bg-amber-500/10 rounded-xl px-3 py-2.5">
-            <span className="text-amber-300 text-xs font-semibold">Propina {selectedTip}%</span>
+            <span className="text-amber-300 text-xs font-semibold">{tipLabel}</span>
             <span className="text-amber-400 font-black text-base">+${tipAmount.toFixed(2)}</span>
           </div>
         )}
@@ -534,7 +580,7 @@ function TipPaymentSection({ subtotal, selectedTip, onTipChange, selectedPayment
       </div>
 
       {/* Total con propina */}
-      {selectedTip > 0 && (
+      {tipAmount > 0 && (
         <div className="mx-4 mb-4 bg-gray-800 rounded-xl px-4 py-3 flex items-center justify-between">
           <div>
             <p className="text-gray-500 text-xs">Consumo</p>
@@ -781,6 +827,8 @@ interface RequestCheckButtonProps {
   accountId?: number;
   total: number;
   tipPct: number;
+  tipAmount?: number;
+  isCustomTip?: boolean;
   paymentMethod: string;
   customerName?: string;
   customerPhone?: string;
@@ -790,7 +838,7 @@ interface RequestCheckButtonProps {
   onForceOpen?: () => void;
 }
 
-function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMethod, customerName, customerPhone, customerNote, receiptUrl, forceOpen, onForceOpen }: RequestCheckButtonProps) {
+function RequestCheckButton({ spot, area, accountId, total, tipPct, tipAmount: tipAmountOverride, isCustomTip, paymentMethod, customerName, customerPhone, customerNote, receiptUrl, forceOpen, onForceOpen }: RequestCheckButtonProps) {
   const [status, setStatus] = useState<'idle' | 'confirm' | 'sending' | 'sent'>('idle');
   const [requestId, setRequestId] = useState<number | null>(null);
   const confirmRef = useRef<HTMLDivElement>(null);
@@ -807,9 +855,10 @@ function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMetho
     }
   }, [forceOpen, status, onForceOpen]);
 
-  const tipAmount = total * (tipPct / 100);
+  const tipAmount = tipAmountOverride ?? total * (tipPct / 100);
   const grandTotal = total + tipAmount;
   const pmLabel = PAYMENT_METHODS.find(p => p.id === paymentMethod)?.label ?? paymentMethod;
+  const tipLabel = isCustomTip ? 'Propina personalizada' : tipPct > 0 ? `Propina (${tipPct}%)` : '';
 
   // Verificar si ya hay una solicitud de cuenta pendiente al montar
   useEffect(() => {
@@ -837,7 +886,11 @@ function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMetho
       try {
         const notes = [
           `Total consumo: $${total.toFixed(2)}`,
-          tipPct > 0 ? `Propina ${tipPct}%: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}` : null,
+          isCustomTip
+            ? `Propina personalizada: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}`
+            : tipPct > 0
+            ? `Propina ${tipPct}%: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}`
+            : null,
           `Forma de pago: ${pmLabel}`,
           customerName ? `Cliente: ${customerName}` : null,
           customerPhone ? `Tel: ${customerPhone}` : null,
@@ -893,9 +946,9 @@ function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMetho
               <span className="text-gray-400 text-sm">Consumo</span>
               <span className="text-white text-sm font-bold">${total.toFixed(2)}</span>
             </div>
-            {tipPct > 0 && (
+            {tipAmount > 0 && (
               <div className="flex items-center justify-between">
-                <span className="text-gray-400 text-sm">Propina ({tipPct}%)</span>
+                <span className="text-gray-400 text-sm">{tipLabel}</span>
                 <span className="text-amber-400 text-sm font-bold">+${tipAmount.toFixed(2)}</span>
               </div>
             )}
@@ -999,7 +1052,7 @@ function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMetho
             <p className="text-green-400 font-black text-base leading-tight">¡Cuenta solicitada!</p>
             <p className="text-green-600 text-xs mt-1 leading-snug">
               El mesero se acercará · Pago: {pmLabel}
-              {tipPct > 0 ? ` · Propina: ${tipPct}%` : ''}
+              {tipAmount > 0 ? ` · Propina: $${tipAmount.toFixed(2)}` : ''}
               {receiptUrl ? ' · Con comprobante' : ''}
             </p>
           </div>
@@ -1086,6 +1139,8 @@ interface TicketShareSectionProps {
   items: AccountItem[];
   total: number;
   tipPct?: number;
+  tipAmount?: number;
+  isCustomTip?: boolean;
   paymentMethod?: string;
   customerName?: string;
 }
@@ -1095,13 +1150,15 @@ function buildTicketText(
   items: AccountItem[],
   total: number,
   tipPct = 0,
+  tipAmountOverride?: number,
+  isCustomTip = false,
   paymentMethod = '',
 ): string {
   const date = new Date().toLocaleString('es-MX', {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
-  const tipAmount = total * (tipPct / 100);
+  const tipAmount = tipAmountOverride ?? total * (tipPct / 100);
   const grandTotal = total + tipAmount;
   const pmLabel = PAYMENT_METHODS.find(p => p.id === paymentMethod)?.label ?? paymentMethod;
 
@@ -1126,8 +1183,12 @@ function buildTicketText(
 
   lines.push('─────────────────────────');
   lines.push(`Consumo:  $${total.toFixed(2)}`);
-  if (tipPct > 0) {
-    lines.push(`Propina ${tipPct}%: +$${tipAmount.toFixed(2)}`);
+  if (tipAmount > 0) {
+    if (isCustomTip) {
+      lines.push(`Propina personalizada: +$${tipAmount.toFixed(2)}`);
+    } else {
+      lines.push(`Propina ${tipPct}%: +$${tipAmount.toFixed(2)}`);
+    }
     lines.push(`TOTAL:  $${grandTotal.toFixed(2)}`);
   } else {
     lines.push(`TOTAL:  $${total.toFixed(2)}`);
@@ -1140,14 +1201,14 @@ function buildTicketText(
   return lines.join('\n');
 }
 
-function TicketShareSection({ account, items, total, tipPct = 0, paymentMethod = '', customerName }: TicketShareSectionProps) {
+function TicketShareSection({ account, items, total, tipPct = 0, tipAmount: tipAmountProp, isCustomTip = false, paymentMethod = '', customerName }: TicketShareSectionProps) {
   const [copied, setCopied] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [showEmailInput, setShowEmailInput] = useState(false);
 
-  const ticketText = buildTicketText(account, items, total, tipPct, paymentMethod);
-  const tipAmount = total * (tipPct / 100);
+  const ticketText = buildTicketText(account, items, total, tipPct, tipAmountProp, isCustomTip, paymentMethod);
+  const tipAmount = tipAmountProp ?? total * (tipPct / 100);
   const grandTotal = total + tipAmount;
 
   const handleWhatsApp = () => {
@@ -1347,7 +1408,8 @@ export default function CuentaPage() {
 
 
   // Propina, forma de pago y nota
-  const [selectedTip, setSelectedTip] = useState(0);
+  const [selectedTip, setSelectedTip] = useState<number | 'custom'>(0);
+  const [customTipAmount, setCustomTipAmount] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('efectivo');
   const [customerNote, setCustomerNote] = useState('');
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
@@ -1620,18 +1682,24 @@ export default function CuentaPage() {
   }, [fetchAccount, safeSetRefreshing]);
 
   // ── Callback para el flotante: confirma el cierre de cuenta ──
-  const handleConfirmBill = useCallback(async (tipPct: number, paymentMethod: string, note: string): Promise<boolean> => {
+  const handleConfirmBill = useCallback(async (tipPct: number, paymentMethod: string, note: string, customTipAmountOverride?: number): Promise<boolean> => {
     if (!account) return false;
     const mesa = account.spot || account.area || 'Mesa';
     const zona = account.area || account.spot || 'General';
     const currentTotal = (account.pos_account_items ?? []).reduce((s: number, i: AccountItem) => s + i.unit_price * i.quantity, 0);
-    const tipAmount = currentTotal * (tipPct / 100);
+    const tipAmount = tipPct === -1
+      ? (customTipAmountOverride ?? (parseFloat(customTipAmount) || 0))
+      : currentTotal * (tipPct / 100);
     const grandTotal = currentTotal + tipAmount;
     const pmLabel = PAYMENT_METHODS.find(p => p.id === paymentMethod)?.label ?? paymentMethod;
 
     const notes = [
       `Total consumo: $${currentTotal.toFixed(2)}`,
-      tipPct > 0 ? `Propina ${tipPct}%: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}` : null,
+      tipPct === -1
+        ? `Propina personalizada: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}`
+        : tipPct > 0
+        ? `Propina ${tipPct}%: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}`
+        : null,
       `Forma de pago: ${pmLabel}`,
       registeredName ? `Cliente: ${registeredName}` : null,
       registeredPhone ? `Tel: ${registeredPhone}` : null,
@@ -2072,7 +2140,11 @@ export default function CuentaPage() {
         {!isClosed && items.length > 0 && (
           <SplitBillSection
             total={total}
-            tipAmount={total * (selectedTip / 100)}
+            tipAmount={
+              selectedTip === 'custom'
+                ? (parseFloat(customTipAmount) || 0)
+                : total * (selectedTip / 100)
+            }
           />
         )}
 
@@ -2082,6 +2154,8 @@ export default function CuentaPage() {
             subtotal={total}
             selectedTip={selectedTip}
             onTipChange={setSelectedTip}
+            customTipAmount={customTipAmount}
+            onCustomTipAmountChange={setCustomTipAmount}
             selectedPayment={selectedPayment}
             onPaymentChange={setSelectedPayment}
             receiptUrl={receiptUrl}
@@ -2101,7 +2175,9 @@ export default function CuentaPage() {
             area={account?.area}
             accountId={account?.id}
             total={total}
-            tipPct={selectedTip}
+            tipPct={selectedTip === 'custom' ? -1 : selectedTip}
+            tipAmount={selectedTip === 'custom' ? (parseFloat(customTipAmount) || 0) : undefined}
+            isCustomTip={selectedTip === 'custom'}
             paymentMethod={selectedPayment}
             customerName={registeredName}
             customerPhone={registeredPhone}
@@ -2127,7 +2203,9 @@ export default function CuentaPage() {
           account={account!}
           items={items}
           total={total}
-          tipPct={selectedTip}
+          tipPct={selectedTip === 'custom' ? -1 : selectedTip}
+          tipAmount={selectedTip === 'custom' ? (parseFloat(customTipAmount) || 0) : undefined}
+          isCustomTip={selectedTip === 'custom'}
           paymentMethod={selectedPayment}
           customerName={registeredName}
         />

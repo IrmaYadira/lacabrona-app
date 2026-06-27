@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { barInfo } from "@/mocks/menu";
@@ -169,10 +169,6 @@ function buildCancelRequestMessage(
 }
 
 export default function Reservas() {
-  useEffect(() => {
-    document.title = 'Reserva tu Mesa en La Cabrona | Alitas, Cerveza & Billar en Zapopan';
-  }, []);
-
   const [form, setForm] = useState({
     customer_name: '',
     phone: '',

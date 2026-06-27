@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
 import JsonLd from "@/components/JsonLd";
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
@@ -28,10 +27,6 @@ const BILLAR_JSONLD = {
 };
 
 export default function BillarPage() {
-  useEffect(() => {
-    document.title = 'Billar Profesional en La Cabrona | Reglamento y Tarifas — Zapopan, Jalisco';
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#faf8f5]">
       <JsonLd data={BILLAR_JSONLD} />

@@ -6,17 +6,18 @@ interface AccountActionFloatingProps {
   spot?: string;
   area?: string;
   total: number;
-  onConfirmBill: (tipPct: number, paymentMethod: string, note: string) => Promise<boolean>;
+  onConfirmBill: (tipPct: number, paymentMethod: string, note: string, customTipAmount?: number) => Promise<boolean>;
   pendingItems: number;
   billStatus?: 'idle' | 'sent';
   onCancelBillRequest?: () => void;
 }
 
 const TIP_OPTIONS = [
-  { label: 'Sin propina', pct: 0 },
   { label: '10%', pct: 10 },
   { label: '15%', pct: 15 },
   { label: '20%', pct: 20 },
+  { label: 'Otra $', pct: -1 },
+  { label: 'Sin propina', pct: 0 },
 ];
 
 const PAYMENT_METHODS = [
@@ -35,12 +36,17 @@ export default function AccountActionFloating({
   onCancelBillRequest,
 }: AccountActionFloatingProps) {
   const [phase, setPhase] = useState<'bar' | 'confirm' | 'sending' | 'sent'>('bar');
-  const [selectedTip, setSelectedTip] = useState(0);
+  const [selectedTip, setSelectedTip] = useState<number | 'custom'>(0);
+  const [customTipAmount, setCustomTipAmount] = useState('');
   const [selectedPayment, setSelectedPayment] = useState('efectivo');
   const [customerNote, setCustomerNote] = useState('');
 
-  const tipAmount = total * (selectedTip / 100);
+  const isCustomTip = selectedTip === 'custom';
+  const tipAmount = isCustomTip
+    ? (parseFloat(customTipAmount) || 0)
+    : total * (selectedTip as number / 100);
   const grandTotal = total + tipAmount;
+  const tipLabel = isCustomTip ? 'Propina personalizada' : selectedTip > 0 ? `Propina (${selectedTip}%)` : '';
   const billWasSent = billStatus === 'sent' || phase === 'sent';
 
   const handleCerrarCuenta = () => {
@@ -51,7 +57,7 @@ export default function AccountActionFloating({
   const handleConfirm = async () => {
     setPhase('sending');
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-    const success = await onConfirmBill(selectedTip, selectedPayment, customerNote);
+    const success = await onConfirmBill(selectedTip === 'custom' ? -1 : selectedTip, selectedPayment, customerNote, isCustomTip ? parseFloat(customTipAmount) : undefined);
     if (success) {
       setPhase('sent');
     } else {
@@ -119,9 +125,9 @@ export default function AccountActionFloating({
                   <span className="text-gray-400 text-base">Consumo</span>
                   <span className="text-white text-base font-bold">${total.toFixed(2)}</span>
                 </div>
-                {selectedTip > 0 && (
+                {tipAmount > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400 text-base">Propina ({selectedTip}%)</span>
+                    <span className="text-gray-400 text-base">{tipLabel}</span>
                     <span className="text-green-400 text-base font-bold">+${tipAmount.toFixed(2)}</span>
                   </div>
                 )}
@@ -134,8 +140,9 @@ export default function AccountActionFloating({
               {/* Propina rápida */}
               <div className="mb-4">
                 <p className="text-gray-500 text-sm font-bold mb-3">¿Dejar propina?</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {TIP_OPTIONS.map(opt => (
+                {/* Fila 1: porcentajes */}
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  {TIP_OPTIONS.filter(o => o.pct > 0).map(opt => (
                     <button
                       key={opt.pct}
                       onClick={() => setSelectedTip(opt.pct)}
@@ -149,6 +156,44 @@ export default function AccountActionFloating({
                     </button>
                   ))}
                 </div>
+                {/* Fila 2: Otra $ + Sin propina */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setSelectedTip('custom')}
+                    className={`py-3 rounded-xl text-base font-black cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                      isCustomTip
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <i className="ri-edit-line mr-1 text-xs" />Otra $
+                  </button>
+                  <button
+                    onClick={() => setSelectedTip(0)}
+                    className={`py-3 rounded-xl text-base font-black cursor-pointer transition-all active:scale-95 whitespace-nowrap ${
+                      selectedTip === 0
+                        ? 'bg-gray-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    Sin propina
+                  </button>
+                </div>
+                {/* Input cantidad personalizada */}
+                {isCustomTip && (
+                  <div className="mt-3 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">$</span>
+                    <input
+                      type="number"
+                      value={customTipAmount}
+                      onChange={e => setCustomTipAmount(e.target.value)}
+                      placeholder="0.00"
+                      min="0"
+                      step="1"
+                      className="w-full pl-7 pr-3 py-2.5 bg-gray-800 border border-green-500/50 focus:border-green-400 rounded-xl text-white text-sm font-bold outline-none transition-colors placeholder-gray-600"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Forma de pago */}

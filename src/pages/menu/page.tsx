@@ -707,10 +707,6 @@ function groupItemsByPrice(items: MenuItem[]): PriceGroup[] {
 }
 
 export default function MenuPage() {
-  useEffect(() => {
-    document.title = 'Menú Completo La Cabrona | Alitas, Boneless, Cervezas & Bebidas en Zapopan';
-  }, []);
-
   const categories = buildCategories();
   const { activeAccount } = useActiveAccount();
   const { addItem, setIsOpen, itemCount, total, flashDiscount, isFavorite, toggleFavorite, setAccountId } = useCart();

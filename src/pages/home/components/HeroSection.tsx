@@ -281,14 +281,14 @@ export default function HeroSection({ logoUrl, showLogo = true }: HeroProps) {
         >
           <a
             href="/guia"
-            className="inline-flex items-center gap-2 text-white/50 hover:text-green-400 text-xs sm:text-sm font-medium transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-2.5 bg-green-500 hover:bg-green-600 text-white px-5 py-3 rounded-full text-sm sm:text-base font-bold transition-all cursor-pointer group shadow-lg shadow-green-500/25 hover:scale-105 active:scale-95 whitespace-nowrap"
           >
-            <i className="ri-book-open-line group-hover:text-green-400 transition-colors" />
+            <i className="ri-book-open-line text-lg" />
             ¿Primera vez? Conoce cómo funciona La Cabrona
-            <span className="inline-flex items-center bg-green-500/15 text-green-300 border border-green-500/20 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold tracking-wide leading-none group-hover:bg-green-500/25 transition-colors whitespace-nowrap">
+            <span className="inline-flex items-center bg-white/20 text-white rounded-full px-2.5 py-0.5 text-[11px] sm:text-xs font-semibold leading-none whitespace-nowrap">
               Para clientes
             </span>
-            <i className="ri-arrow-right-line text-[10px] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            <i className="ri-arrow-right-line text-sm group-hover:translate-x-1 transition-transform" />
           </a>
         </div>
       </div>
