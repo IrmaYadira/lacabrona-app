@@ -27,7 +27,7 @@ function OrderCard({ acc }: { acc: AccountWithItems }) {
           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${acc.status === 'open' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
             {acc.status === 'open' ? 'Abierta' : 'Cerrada'}
           </span>
-          <span className="font-black text-gray-900 text-sm">${total.toFixed(2)}</span>
+          <span className="font-black text-gray-900 text-sm">MXN${total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -44,7 +44,7 @@ function OrderCard({ acc }: { acc: AccountWithItems }) {
             const fTotal = fItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
             return (
               <span key={folio} className="text-xs bg-amber-50 border border-amber-100 text-amber-700 px-2 py-0.5 rounded-lg font-medium">
-                Ronda #{folio} · ${fTotal.toFixed(2)}
+                Ronda #{folio} · MXN${fTotal.toFixed(2)}
               </span>
             );
           })}
@@ -98,7 +98,7 @@ export default function WebVsPosOrders({ dateRange }: WebVsPosOrdersProps) {
                 </div>
               </div>
               <p className="text-3xl font-black text-gray-900">{webOrders.length}</p>
-              <p className="text-sm text-green-600 font-semibold mt-1">${webRevenue.toFixed(2)}</p>
+              <p className="text-sm text-green-600 font-semibold mt-1">MXN${webRevenue.toFixed(2)}</p>
               {totalRevenue > 0 && (
                 <div className="mt-3">
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -121,7 +121,7 @@ export default function WebVsPosOrders({ dateRange }: WebVsPosOrdersProps) {
                 </div>
               </div>
               <p className="text-3xl font-black text-gray-900">{posOrders.length}</p>
-              <p className="text-sm text-amber-600 font-semibold mt-1">${posRevenue.toFixed(2)}</p>
+              <p className="text-sm text-amber-600 font-semibold mt-1">MXN${posRevenue.toFixed(2)}</p>
               {totalRevenue > 0 && (
                 <div className="mt-3">
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

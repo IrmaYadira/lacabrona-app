@@ -139,7 +139,7 @@ export default function EditPaymentModal({
       await supabasePos.from('pos_account_events').insert({
         account_id: accountId,
         event_type: 'payment_edited',
-        description: `Forma de pago editada (Admin): "${oldMethods}" → "${newMethods}" · Total: $${oldTotalGlobal.toFixed(2)} → $${newTotalGlobal.toFixed(2)}${newTotalFees > 0 ? ` · +$${newTotalFees.toFixed(2)} cargo terminal` : ''}`,
+        description: `Forma de pago editada (Admin): "${oldMethods}" → "${newMethods}" · Total: MXN$${oldTotalGlobal.toFixed(2)} → MXN$${newTotalGlobal.toFixed(2)}${newTotalFees > 0 ? ` · +MXN$${newTotalFees.toFixed(2)} cargo terminal` : ''}`,
         metadata: {
           spot,
           old_methods: payments.map(p => ({ method: p.payment_method, total: Number(p.total), card_fee: Number(p.card_fee) })),
@@ -214,7 +214,7 @@ export default function EditPaymentModal({
           {/* Info: subtotal de consumos (no cambia) */}
           <div className="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Subtotal Consumos</span>
-            <span className="text-sm font-bold text-gray-900">${subtotalItems.toFixed(2)}</span>
+            <span className="text-sm font-bold text-gray-900">MXN${subtotalItems.toFixed(2)}</span>
           </div>
 
           {/* Cada pago */}
@@ -238,15 +238,15 @@ export default function EditPaymentModal({
                   </div>
                   <div className="text-right">
                     <p className={`text-sm font-bold ${methodChanged ? 'text-amber-600' : 'text-gray-900'}`}>
-                      ${pay.total.toFixed(2)}
+                      MXN${pay.total.toFixed(2)}
                       {methodChanged && (
                         <span className="text-xs text-amber-500 ml-1">
-                          (era ${Number(originalPay?.total ?? 0).toFixed(2)})
+                          (era MXN${Number(originalPay?.total ?? 0).toFixed(2)})
                         </span>
                       )}
                     </p>
                     {pay.card_fee > 0 && (
-                      <p className="text-xs text-rose-500">+${pay.card_fee.toFixed(2)} terminal</p>
+                      <p className="text-xs text-rose-500">+MXN${pay.card_fee.toFixed(2)} terminal</p>
                     )}
                   </div>
                 </div>
@@ -284,9 +284,9 @@ export default function EditPaymentModal({
                       <i className="ri-information-line text-amber-500 text-sm flex-shrink-0" />
                       <div className="text-xs text-amber-700">
                         {currentOpt?.hasCardFee ? (
-                          <span>Se agrega <strong>3% de cargo terminal</strong>: +${pay.card_fee.toFixed(2)}</span>
+                          <span>Se agrega <strong>3% de cargo terminal</strong>: +MXN${pay.card_fee.toFixed(2)}</span>
                         ) : (
-                          <span>Se elimina el cargo terminal de <strong>-${Number(originalPay?.card_fee ?? 0).toFixed(2)}</strong></span>
+                          <span>Se elimina el cargo terminal de <strong>-MXN${Number(originalPay?.card_fee ?? 0).toFixed(2)}</strong></span>
                         )}
                       </div>
                     </div>
@@ -300,12 +300,12 @@ export default function EditPaymentModal({
           <div className="bg-gray-900 rounded-2xl px-5 py-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-400 text-sm">Subtotal consumos</span>
-              <span className="text-white font-semibold">${subtotalItems.toFixed(2)}</span>
+              <span className="text-white font-semibold">MXN${subtotalItems.toFixed(2)}</span>
             </div>
             {newTotalFees > 0 && (
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-sm">Cargo terminal (3%)</span>
-                <span className="text-rose-400 font-semibold">+${newTotalFees.toFixed(2)}</span>
+                <span className="text-rose-400 font-semibold">+MXN${newTotalFees.toFixed(2)}</span>
               </div>
             )}
             {isMixed && editedPayments.length > 1 && (
@@ -317,7 +317,7 @@ export default function EditPaymentModal({
                       <i className={METHOD_ICONS[p.payment_method] ?? 'ri-money-dollar-circle-line'} />
                       {METHOD_LABELS[p.payment_method] ?? p.payment_method}
                     </span>
-                    <span>${p.total.toFixed(2)}</span>
+                    <span>MXN${p.total.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -326,10 +326,10 @@ export default function EditPaymentModal({
               <span className="text-gray-300 text-sm font-semibold uppercase tracking-wide">Total</span>
               <div className="text-right">
                 {hasChanges && (
-                  <span className="text-gray-500 text-xs line-through mr-2">${oldTotalGlobal.toFixed(2)}</span>
+                  <span className="text-gray-500 text-xs line-through mr-2">MXN${oldTotalGlobal.toFixed(2)}</span>
                 )}
                 <span className={`text-xl font-black ${hasChanges ? 'text-amber-400' : 'text-amber-400'}`}>
-                  ${newTotalGlobal.toFixed(2)}
+                  MXN${newTotalGlobal.toFixed(2)}
                 </span>
               </div>
             </div>

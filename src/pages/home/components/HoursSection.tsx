@@ -50,7 +50,7 @@ export default function HoursSection() {
                   }`}
                 >
                   <p
-                    className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-0.5 ${
+                    className={`text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-0.5 ${
                       isToday ? "text-amber-100" : isClosed ? "text-gray-400" : "text-amber-600"
                     }`}
                   >
@@ -65,14 +65,14 @@ export default function HoursSection() {
                   </p>
                   <div className="border-t border-current/20 pt-1.5">
                     {isClosed ? (
-                      <span className="text-[10px] sm:text-xs font-bold">CERRADO</span>
+                      <span className="text-[11px] sm:text-xs font-bold">CERRADO</span>
                     ) : (
                       <>
-                        <p className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">
+                        <p className="text-[11px] sm:text-xs md:text-sm font-medium leading-tight">
                           {hours.split(" - ")[0]}
                         </p>
-                        <p className="text-[9px] sm:text-[10px] md:text-xs opacity-60 my-0.5">a</p>
-                        <p className="text-[10px] sm:text-xs md:text-sm font-medium leading-tight">
+                        <p className="text-[11px] sm:text-xs opacity-60 my-0.5">a</p>
+                        <p className="text-[11px] sm:text-xs md:text-sm font-medium leading-tight">
                           {hours.split(" - ")[1]}
                         </p>
                       </>
@@ -80,7 +80,7 @@ export default function HoursSection() {
                   </div>
                   {isToday && (
                     <div className="mt-1.5 inline-block px-2 py-0.5 bg-white/20 rounded-full">
-                      <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
                         Hoy
                       </span>
                     </div>

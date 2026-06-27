@@ -273,6 +273,24 @@ export default function HeroSection({ logoUrl, showLogo = true }: HeroProps) {
             Ordenar
           </button>
         </div>
+
+        <div
+          className={`mt-4 transition-all duration-1000 delay-1000 ease-out ${
+            loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
+        >
+          <a
+            href="/guia"
+            className="inline-flex items-center gap-2 text-white/50 hover:text-green-400 text-xs sm:text-sm font-medium transition-colors cursor-pointer group"
+          >
+            <i className="ri-book-open-line group-hover:text-green-400 transition-colors" />
+            ¿Primera vez? Conoce cómo funciona La Cabrona
+            <span className="inline-flex items-center bg-green-500/15 text-green-300 border border-green-500/20 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold tracking-wide leading-none group-hover:bg-green-500/25 transition-colors whitespace-nowrap">
+              Para clientes
+            </span>
+            <i className="ri-arrow-right-line text-[10px] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+          </a>
+        </div>
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">

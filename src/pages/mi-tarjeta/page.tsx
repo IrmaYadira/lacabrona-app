@@ -387,21 +387,6 @@ export default function MiTarjetaPage() {
     }
   }, [lookupPhone]);
 
-  useEffect(() => {
-    const existing = document.querySelector('meta[name="robots"]');
-    if (existing) existing.remove();
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, nofollow';
-    document.head.appendChild(meta);
-    const originalTitle = document.title;
-    document.title = 'Mi Tarjeta | La Cabrona';
-    return () => {
-      meta.remove();
-      document.title = originalTitle;
-    };
-  }, []);
-
   const fetchRedemptions = useCallback(async (customerId: number) => {
     setRedemptionsLoading(true);
     const { data } = await supabase
@@ -434,9 +419,8 @@ export default function MiTarjetaPage() {
   }, [refresh]);
 
   useEffect(() => {
-    if (customer?.id) {
-      fetchRedemptions(customer.id);
-    }
+    if (!customer?.id) return;
+    fetchRedemptions(customer.id);
   }, [customer?.id, fetchRedemptions]);
 
   const handleLogout = () => {

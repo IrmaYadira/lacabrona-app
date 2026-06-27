@@ -44,20 +44,6 @@ const DEMO_VIDEO_ID = "ScMzIvxBSi4";
 const WHATSAPP_CTA = "https://wa.me/5213348567795?text=Hola!%20Ya%20vi%20el%20video%20demo%20y%20quiero%20agendar%20una%20llamada%20para%20empezar%20con%20QRestPOS.";
 
 export default function GraciasPage() {
-  useEffect(() => {
-    const existing = document.querySelector('meta[name="robots"]');
-    if (existing) existing.remove();
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, nofollow';
-    document.head.appendChild(meta);
-    const originalTitle = document.title;
-    document.title = 'Gracias | La Cabrona';
-    return () => {
-      meta.remove();
-      document.title = originalTitle;
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-['Inter']">

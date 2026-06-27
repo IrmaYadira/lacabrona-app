@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabasePos } from '@/pages/pos/supabasePos';
-import { saveAccountToHistory, updateAccountInHistory } from '@/hooks/useAccountHistory';
+import { saveAccountToHistory, updateAccountInHistory, getAccountHistory } from '@/hooks/useAccountHistory';
 import { getLoyaltyCustomerFromStorage } from '@/hooks/useLoyaltyCustomer';
 import { useActiveAccount, getActiveAccount } from '@/hooks/useActiveAccount';
 import { usePersistentCustomer, getActiveCustomer } from '@/hooks/usePersistentCustomer';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { REWARD_TIERS } from '@/hooks/useLoyaltyRewards';
 import PaidTicket from './components/PaidTicket';
+import AccountActionFloating from '@/components/feature/AccountActionFloating';
 
 // ── Compresor de imagen para recibos ──
 function compressImage(dataUrl: string): Promise<string> {
@@ -274,7 +275,7 @@ function AddToHomePrompt() {
 }
 
 // ── Llamar al mesero ──
-function CallWaiterButton({ spot, accountId }: { spot?: string; accountId?: number }) {
+function CallWaiterButton({ spot, area, accountId }: { spot?: string; area?: string; accountId?: number }) {
   const [status, setStatus] = useState<'idle' | 'calling' | 'sent'>('idle');
 
   const handleCall = async () => {
@@ -282,9 +283,12 @@ function CallWaiterButton({ spot, accountId }: { spot?: string; accountId?: numb
     setStatus('calling');
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     try {
+      const mesa = spot || area || 'Mesa';
+      const zona = area || spot || 'General';
       await supabasePos.from('waiter_requests').insert({
         account_id: accountId ?? null,
-        spot: spot ?? null,
+        spot: mesa,
+        area: zona,
         request_type: 'call_waiter',
         status: 'pending',
         notes: 'El cliente solicita atención en su mesa',
@@ -773,6 +777,7 @@ function CustomerNoteInput({ value, onChange }: CustomerNoteInputProps) {
 // ── Pedir la cuenta ──
 interface RequestCheckButtonProps {
   spot?: string;
+  area?: string;
   accountId?: number;
   total: number;
   tipPct: number;
@@ -781,11 +786,26 @@ interface RequestCheckButtonProps {
   customerPhone?: string;
   customerNote?: string;
   receiptUrl?: string | null;
+  forceOpen?: boolean;
+  onForceOpen?: () => void;
 }
 
-function RequestCheckButton({ spot, accountId, total, tipPct, paymentMethod, customerName, customerPhone, customerNote, receiptUrl }: RequestCheckButtonProps) {
+function RequestCheckButton({ spot, area, accountId, total, tipPct, paymentMethod, customerName, customerPhone, customerNote, receiptUrl, forceOpen, onForceOpen }: RequestCheckButtonProps) {
   const [status, setStatus] = useState<'idle' | 'confirm' | 'sending' | 'sent'>('idle');
   const [requestId, setRequestId] = useState<number | null>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
+
+  // Forzar apertura desde el flotante
+  useEffect(() => {
+    if (forceOpen && status === 'idle') {
+      setStatus('confirm');
+      onForceOpen?.();
+      // Pequeño delay para que el DOM se actualice antes del scroll
+      setTimeout(() => {
+        confirmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+  }, [forceOpen, status, onForceOpen]);
 
   const tipAmount = total * (tipPct / 100);
   const grandTotal = total + tipAmount;
@@ -795,9 +815,10 @@ function RequestCheckButton({ spot, accountId, total, tipPct, paymentMethod, cus
   useEffect(() => {
     if (!accountId && !spot) return;
     const checkExisting = async () => {
+      const mesa = spot || area || 'Mesa';
       let q = supabasePos.from('waiter_requests').select('id, created_at').eq('request_type', 'request_bill').eq('status', 'pending');
       if (accountId) q = q.eq('account_id', accountId);
-      else if (spot) q = q.eq('spot', spot);
+      else q = q.eq('spot', mesa);
       const { data } = await q.order('created_at', { ascending: false }).limit(1);
       if (data && data.length > 0) {
         setRequestId(data[0].id);
@@ -805,7 +826,7 @@ function RequestCheckButton({ spot, accountId, total, tipPct, paymentMethod, cus
       }
     };
     checkExisting();
-  }, [accountId, spot]);
+  }, [accountId, spot, area]);
 
   const handleRequest = async () => {
     if (status === 'sent') return;
@@ -823,9 +844,12 @@ function RequestCheckButton({ spot, accountId, total, tipPct, paymentMethod, cus
           customerNote ? `Nota: ${customerNote}` : null,
         ].filter(Boolean).join(' · ');
 
+        const mesa = spot || area || 'Mesa';
+        const zona = area || spot || 'General';
         const { data, error } = await supabasePos.from('waiter_requests').insert({
           account_id: accountId ?? null,
-          spot: spot ?? null,
+          spot: mesa,
+          area: zona,
           request_type: 'request_bill',
           status: 'pending',
           notes,
@@ -851,7 +875,7 @@ function RequestCheckButton({ spot, accountId, total, tipPct, paymentMethod, cus
 
   if (status === 'confirm') {
     return (
-      <div className="px-1">
+      <div className="px-1" ref={confirmRef}>
         <div className="bg-gray-900 border-2 border-green-500 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -1141,7 +1165,9 @@ function TicketShareSection({ account, items, total, tipPct = 0, paymentMethod =
       await navigator.clipboard.writeText(ticketText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch { /* noop */ }
+    } catch (e) {
+      console.warn('[CuentaPage] clipboard copy failed:', e);
+    }
   };
 
   const handleEmail = () => {
@@ -1301,20 +1327,6 @@ export default function CuentaPage() {
   const navigate = useNavigate();
 
   // Las cuentas son vistas privadas/efímeras, no deben indexarse
-  useEffect(() => {
-    const existing = document.querySelector('meta[name="robots"]');
-    if (existing) existing.remove();
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, nofollow';
-    document.head.appendChild(meta);
-    const originalTitle = document.title;
-    document.title = 'Cuenta | La Cabrona';
-    return () => {
-      meta.remove();
-      document.title = originalTitle;
-    };
-  }, []);
 
   const { activeAccount, setActiveAccount, clearActiveAccount } = useActiveAccount();
   const { profile: persistentProfile } = usePersistentCustomer();
@@ -1332,14 +1344,16 @@ export default function CuentaPage() {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [toasts, setToasts] = useState<ToastNotif[]>([]);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
-  const [payment, setPayment] = useState<PosPayment | null>(null);
+
 
   // Propina, forma de pago y nota
   const [selectedTip, setSelectedTip] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState('efectivo');
   const [customerNote, setCustomerNote] = useState('');
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [requestCheckOpen, setRequestCheckOpen] = useState(false);
+  const [billSentStatus, setBillSentStatus] = useState<'idle' | 'sent'>('idle');
+  const [payment, setPayment] = useState<PosPayment | null>(null);
 
   const elapsed = useElapsed(account?.created_at);
   const knownItemIds = useRef<Set<number>>(new Set());
@@ -1416,6 +1430,7 @@ export default function CuentaPage() {
   }, []);
 
   const fetchAccount = useCallback(async (silent = false) => {
+    try {
     // Si no hay parámetros y hay cuenta guardada, esperar redirección — no mostrar "not found"
     const hasNoParams = !spotParam && !areaParam && !accountIdParam && !nombreParam;
     const hasSaved = !!getActiveAccount();
@@ -1450,6 +1465,15 @@ export default function CuentaPage() {
         .eq('id', accountIdParam)
         .maybeSingle();
       data = d as Account | null;
+      // Seguridad: si la cuenta está cerrada y no está en el historial local del usuario,
+      // tratarla como no encontrada para evitar filtración de datos de otros clientes
+      if (data && data.status === 'closed') {
+        const history = getAccountHistory();
+        const isMine = history.some(e => e.id === data.id);
+        if (!isMine) {
+          data = null;
+        }
+      }
     } else if (spotParam || areaParam) {
       if (spotParam) {
         data = await findBySpot(spotParam, areaParam || undefined);
@@ -1542,14 +1566,20 @@ export default function CuentaPage() {
         safeSetPayment(null);
       }
 
-      // Persistir cuenta activa para que el cliente pueda volver fácilmente
-      setActiveAccount({
-        accountId: typedAccount.id,
-        spot: typedAccount.spot,
-        area: typedAccount.area,
-        customerName: typedAccount.customer_name || undefined,
-        customerPhone: typedAccount.customer_phone || undefined,
-      });
+      // Si la cuenta está cerrada, limpiar la cuenta activa localStorage para que no
+      // siga apareciendo el botón flotante cuando el usuario regrese
+      if (typedAccount.status === 'closed') {
+        clearActiveAccount();
+      } else {
+        // Persistir cuenta activa para que el cliente pueda volver fácilmente
+        setActiveAccount({
+          accountId: typedAccount.id,
+          spot: typedAccount.spot,
+          area: typedAccount.area,
+          customerName: typedAccount.customer_name || undefined,
+          customerPhone: typedAccount.customer_phone || undefined,
+        });
+      }
 
       const currentUrl = window.location.pathname + window.location.search;
       if (isFirstLoad.current) {
@@ -1574,12 +1604,79 @@ export default function CuentaPage() {
     safeSetLastUpdated(new Date());
     safeSetLoading(false);
     if (!silent) safeSetRefreshing(false);
+    } catch (e) {
+      console.warn('[CuentaPage] fetchAccount failed:', e);
+      // Cuenta borrada, error de red, o cualquier fallo — mostrar "no encontrada" en vez de crashear
+      safeSetNotFound(true);
+      safeSetPayment(null);
+      safeSetLoading(false);
+      if (!silent) safeSetRefreshing(false);
+    }
   }, [spotParam, areaParam, accountIdParam, nombreParam, addToast, clearActiveAccount, setActiveAccount, safeSetAccount, safeSetLoading, safeSetNotFound, safeSetPayment, safeSetLastUpdated, safeSetRefreshing]);
 
   const handleRefresh = useCallback(async () => {
     safeSetRefreshing(true);
     await fetchAccount(false);
   }, [fetchAccount, safeSetRefreshing]);
+
+  // ── Callback para el flotante: confirma el cierre de cuenta ──
+  const handleConfirmBill = useCallback(async (tipPct: number, paymentMethod: string, note: string): Promise<boolean> => {
+    if (!account) return false;
+    const mesa = account.spot || account.area || 'Mesa';
+    const zona = account.area || account.spot || 'General';
+    const currentTotal = (account.pos_account_items ?? []).reduce((s: number, i: AccountItem) => s + i.unit_price * i.quantity, 0);
+    const tipAmount = currentTotal * (tipPct / 100);
+    const grandTotal = currentTotal + tipAmount;
+    const pmLabel = PAYMENT_METHODS.find(p => p.id === paymentMethod)?.label ?? paymentMethod;
+
+    const notes = [
+      `Total consumo: $${currentTotal.toFixed(2)}`,
+      tipPct > 0 ? `Propina ${tipPct}%: +$${tipAmount.toFixed(2)} = Total: $${grandTotal.toFixed(2)}` : null,
+      `Forma de pago: ${pmLabel}`,
+      registeredName ? `Cliente: ${registeredName}` : null,
+      registeredPhone ? `Tel: ${registeredPhone}` : null,
+      note ? `Nota: ${note}` : null,
+    ].filter(Boolean).join(' · ');
+
+    try {
+      const { error } = await supabasePos.from('waiter_requests').insert({
+        account_id: account.id,
+        spot: mesa,
+        area: zona,
+        request_type: 'request_bill',
+        status: 'pending',
+        notes,
+        receipt_url: receiptUrl ?? null,
+      });
+      if (error) {
+        console.error('Error al solicitar cuenta:', error);
+        return false;
+      }
+      setBillSentStatus('sent');
+      return true;
+    } catch (err) {
+      console.error('Error al solicitar cuenta:', err);
+      return false;
+    }
+  }, [account, registeredName, registeredPhone, receiptUrl]);
+
+  const handleCancelBillRequest = useCallback(async () => {
+    setBillSentStatus('idle');
+    if (!account) return;
+    try {
+      const { data } = await supabasePos
+        .from('waiter_requests')
+        .select('id')
+        .eq('account_id', account.id)
+        .eq('request_type', 'request_bill')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        await supabasePos.from('waiter_requests').update({ status: 'resolved' }).eq('id', data[0].id);
+      }
+    } catch (_) {/* silencioso */}
+  }, [account]);
 
   useEffect(() => {
     fetchAccount(true);
@@ -1670,7 +1767,7 @@ export default function CuentaPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-950 select-none ${panelCollapsed ? 'pb-96' : 'pb-[32rem]'}`}>
+    <div className={`min-h-screen bg-gray-950 select-none ${isClosed ? 'pb-16' : 'pb-56'}`}>
       <style>{slideStyle}</style>
 
       <ToastBanner toasts={toasts} onDismiss={dismissToast} />
@@ -1687,6 +1784,21 @@ export default function CuentaPage() {
 
       {/* ── Header fijo ── */}
       <div className="bg-gray-900 border-b border-gray-800 px-5 pt-10 pb-5 sticky top-0 z-10">
+        {/* Navegación superior */}
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate('/buscar-cuenta')}
+            className="flex items-center gap-1 text-gray-500 hover:text-white text-sm cursor-pointer transition-colors"
+          >
+            <i className="ri-arrow-left-s-line text-lg" />
+            <span className="hidden sm:inline">Volver</span>
+          </button>
+          <Link to="/" className="flex items-center gap-1 text-gray-500 hover:text-amber-400 text-sm transition-colors">
+            <i className="ri-home-line text-base" />
+            <span className="hidden sm:inline">Inicio</span>
+          </Link>
+        </div>
+
         <div className="flex items-center gap-4 mb-5">
           <img
             src={LOGO_URL}
@@ -1953,7 +2065,7 @@ export default function CuentaPage() {
 
         {/* ── Botón llamar al mesero ── */}
         {!isClosed && (
-          <CallWaiterButton spot={account?.spot} accountId={account?.id} />
+          <CallWaiterButton spot={account?.spot} area={account?.area} accountId={account?.id} />
         )}
 
         {/* ── DIVIDIR LA CUENTA ── */}
@@ -1986,6 +2098,7 @@ export default function CuentaPage() {
         {!isClosed && items.length > 0 && (
           <RequestCheckButton
             spot={account?.spot}
+            area={account?.area}
             accountId={account?.id}
             total={total}
             tipPct={selectedTip}
@@ -1994,6 +2107,8 @@ export default function CuentaPage() {
             customerPhone={registeredPhone}
             customerNote={customerNote}
             receiptUrl={receiptUrl}
+            forceOpen={requestCheckOpen}
+            onForceOpen={() => setRequestCheckOpen(false)}
           />
         )}
 
@@ -2018,105 +2133,18 @@ export default function CuentaPage() {
         />
       </div>
 
-      {/* ── Flotante de acciones ── */}
-      {panelCollapsed ? (
-        <button
-          onClick={() => setPanelCollapsed(false)}
-          className="fixed bottom-36 right-4 z-20 bg-gray-900 border border-gray-700/80 rounded-full px-4 py-3 flex items-center gap-2 shadow-2xl cursor-pointer active:scale-95 transition-transform"
-        >
-          <span className={`w-2 h-2 rounded-full ${isClosed ? 'bg-gray-500' : 'bg-green-400 animate-pulse'}`} />
-          <span className="text-white font-black text-sm">${total.toFixed(2)}</span>
-          <i className="ri-arrow-up-s-line text-gray-400 text-lg" />
-        </button>
-      ) : (
-        <div className="fixed bottom-36 left-4 right-4 z-20" style={{ filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.5))' }}>
-          {!isClosed ? (
-            <div className="bg-gray-900 border border-gray-700/80 rounded-3xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-800">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-gray-400 text-xs font-semibold uppercase tracking-wide">Cuenta abierta</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {pendingItems > 0 && (
-                    <span className="flex items-center gap-1 text-amber-400 text-xs font-bold bg-amber-500/15 px-2.5 py-1 rounded-full">
-                      <i className="ri-loader-2-line animate-spin text-xs" />
-                      {pendingItems} en camino
-                    </span>
-                  )}
-                  <span className="text-white text-xl font-black">${total.toFixed(2)}</span>
-                  <button
-                    onClick={() => setPanelCollapsed(true)}
-                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 cursor-pointer transition-colors"
-                  >
-                    <i className="ri-arrow-down-s-line text-lg" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-2.5 px-3 py-3">
-                <Link
-              to={menuUrl || '/menu'}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-2xl text-sm font-black transition-colors whitespace-nowrap"
-            >
-              <i className="ri-add-circle-fill text-base" />
-              Pedir más
-            </Link>
-                <a
-                  href="https://wa.me/523348567795"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-3.5 px-4 bg-green-600/20 border border-green-600/50 hover:bg-green-600/30 text-green-400 rounded-2xl text-sm font-bold transition-colors whitespace-nowrap"
-                >
-                  <i className="ri-whatsapp-line text-base" />
-                  Llamar
-                </a>
-                <Link
-                  to="/menu"
-                  className="flex items-center justify-center gap-2 py-3.5 px-4 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-400 hover:text-white rounded-2xl text-sm font-bold transition-colors whitespace-nowrap"
-                >
-                  <i className="ri-restaurant-line text-base" />
-                  Menú
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-gray-900 border border-gray-700/80 rounded-3xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-800">
-                <div className="flex items-center gap-2">
-                  <i className="ri-checkbox-circle-fill text-green-400 text-base" />
-                  <span className="text-green-400 text-xs font-bold uppercase tracking-wide">Cuenta cerrada</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white text-xl font-black">${total.toFixed(2)}</span>
-                  <button
-                    onClick={() => setPanelCollapsed(true)}
-                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 cursor-pointer transition-colors"
-                  >
-                    <i className="ri-arrow-down-s-line text-lg" />
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-2.5 px-3 py-3">
-                <a
-                  href="https://wa.me/523348567795"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-2xl text-sm font-black transition-colors whitespace-nowrap"
-                >
-                  <i className="ri-whatsapp-line text-base" />
-                  Contactar por WhatsApp
-                </a>
-                <Link
-                  to="/menu"
-                  className="flex items-center justify-center gap-2 py-3.5 px-5 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-300 hover:text-white rounded-2xl text-sm font-bold transition-colors whitespace-nowrap"
-                >
-                  <i className="ri-restaurant-line text-base" />
-                  Menú
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* ── Flotante de acciones principal — SIEMPRE visible ── */}
+      {!isClosed && (
+        <AccountActionFloating
+          menuUrl={menuUrl}
+          spot={account?.spot}
+          area={account?.area}
+          total={total}
+          onConfirmBill={handleConfirmBill}
+          pendingItems={pendingItems}
+          billStatus={billSentStatus}
+          onCancelBillRequest={handleCancelBillRequest}
+        />
       )}
     </div>
   );

@@ -36,6 +36,7 @@ export default function CartOrderHistory() {
   const [loading, setLoading] = useState(true);
   const [accountTotal, setAccountTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [foundAccountId, setFoundAccountId] = useState<number | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -67,9 +68,12 @@ export default function CartOrderHistory() {
       if (!accountId) {
         setRounds([]);
         setAccountTotal(0);
+        setFoundAccountId(null);
         setLoading(false);
         return;
       }
+
+      setFoundAccountId(accountId);
 
       const { data: items, error: itemsErr } = await supabase
         .from("pos_account_items")
@@ -345,7 +349,7 @@ export default function CartOrderHistory() {
       {/* CTA → /cuenta */}
       <div className="mx-4 mt-3">
         <button
-          onClick={() => navigate("/cuenta")}
+          onClick={() => navigate(foundAccountId ? `/cuenta?id=${foundAccountId}` : "/cuenta")}
           className="w-full flex items-center justify-center gap-2.5 bg-gray-900 hover:bg-gray-800 active:scale-[0.98] text-white rounded-xl px-4 py-3.5 transition-all cursor-pointer whitespace-nowrap"
         >
           <div className="w-5 h-5 flex items-center justify-center">

@@ -5,7 +5,7 @@ import {
   ampolletasMenu, nonAlcoholicBeersMenu, micheladaMenu, micheladaConCamaronMenu,
   sidesMenu, hotDogsMenu, burgersMenu, comboMenu, sodasMenu,
   cannedAlcoholicMenu, shotShowsMenu, vasosPreparadosMenu, azulitosMenu, preparadosMenu,
-  barrilMenu, cigarettesMenu,
+  barrilMenu, cigarettesMenu, caguamasMenu,
 } from '@/mocks/menu';
 
 export interface SaleItem {
@@ -60,6 +60,7 @@ function buildCategories(): Category[] {
     { group: 'BEBIDAS', label: 'Pacífico',     icon: 'ri-goblet-line',      items: pacificoBeersMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
     { group: 'BEBIDAS', label: 'Ampolletas',   icon: 'ri-goblet-line',      items: ampolletasMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
     { group: 'BEBIDAS', label: 'Barril',       icon: 'ri-goblet-fill',      items: barrilMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
+    { group: 'BEBIDAS', label: 'Caguamas',     icon: 'ri-goblet-fill',      items: caguamasMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
     { group: 'BEBIDAS', label: 'Micheladas',   icon: 'ri-cup-line',         items: [
       { id: micheladaMenu.id, name: micheladaMenu.name, price: micheladaMenu.price },
       { id: micheladaConCamaronMenu.id, name: micheladaConCamaronMenu.name, price: micheladaConCamaronMenu.price },
@@ -67,7 +68,7 @@ function buildCategories(): Category[] {
     { group: 'BEBIDAS', label: 'Shots',        icon: 'ri-flask-line',       items: shotShowsMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
     { group: 'BEBIDAS', label: 'Preparados',   icon: 'ri-cup-fill',         items: preparadosMenu.flatMap(i => [
       { id: `prep-${i.id}-sencillo`, name: `${i.name} (Sencillo)`, price: i.basePrice },
-      { id: `prep-${i.id}-doble`,    name: `${i.name} (Doble)`,    price: i.doublePrice },
+      { id: `prep-${i.id}-doble`,    name: `${i.name} (Doble)`,    price: i.basePrice + i.showPrice },
     ])},
     { group: 'BEBIDAS', label: 'Azulitos',     icon: 'ri-cup-line',         items: azulitosMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },
     { group: 'BEBIDAS', label: 'Vasos Prep.',  icon: 'ri-cup-line',         items: vasosPreparadosMenu.map(i => ({ id: i.id, name: i.name, price: i.price })) },

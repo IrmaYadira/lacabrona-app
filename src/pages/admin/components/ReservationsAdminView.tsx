@@ -137,7 +137,7 @@ function showReservationPushNotification(r: Reservation) {
       n.close();
     };
   } catch (_) {
-    /* Notification API not available or blocked */
+    console.warn('[ReservationsAdmin] push notification failed:', _);
   }
 }
 
@@ -159,7 +159,7 @@ function playReservationChime() {
       osc.start(t);
       osc.stop(t + 0.25);
     });
-  } catch (_) { /* browser blocked audio */ }
+  } catch (_) { console.warn('[ReservationsAdmin] chime failed:', _); }
 }
 
 export default function ReservationsAdminView() {

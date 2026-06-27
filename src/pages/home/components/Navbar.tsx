@@ -7,6 +7,7 @@ interface NavbarProps {
   logoUrl: string;
   onOrderNow?: () => void;
   onOpenLoyalty?: () => void;
+  onOpenReservations?: () => void;
 }
 
 // Primera fila — comida
@@ -42,7 +43,7 @@ const NAV_ROW2 = [
 
 const ALL_ITEMS = [...NAV_ROW1, ...NAV_ROW2];
 
-export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty }: NavbarProps) {
+export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty, onOpenReservations }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { itemCount, setIsOpen, favorites, lastFavoriteAction, lastCartAction } = useCart();
@@ -298,7 +299,7 @@ export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty }: NavbarPro
               </Link>
               <div className={`w-px h-5 flex-shrink-0 mx-1 ${scrolled ? 'bg-gray-200' : 'bg-white/30'}`} />
               <button
-                onClick={() => { const el = document.getElementById('mis-reservaciones'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+                onClick={() => { onOpenReservations?.(); }}
                 className={`text-[11px] font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap px-2.5 py-1 rounded transition-colors flex-shrink-0 flex items-center gap-1 ${
                   scrolled
                     ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
@@ -310,33 +311,26 @@ export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty }: NavbarPro
               </button>
               <div className={`w-px h-5 flex-shrink-0 mx-1 ${scrolled ? 'bg-gray-200' : 'bg-white/30'}`} />
               <LoyaltyChip scrolled={scrolled} onOpenModal={onOpenLoyalty ?? (() => {})} />
+              <div className={`w-px h-5 flex-shrink-0 mx-1 ${scrolled ? 'bg-gray-200' : 'bg-white/30'}`} />
+              <Link
+                to="/guia"
+                className={`text-[11px] font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap px-2.5 py-1 rounded transition-colors flex-shrink-0 flex items-center gap-1 ${
+                  scrolled
+                    ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                    : 'text-green-300 bg-white/10 hover:text-green-200 hover:bg-white/20'
+                }`}
+              >
+                <i className="ri-book-open-line text-[12px]" />
+                Guía
+              </Link>
             </div>
           </div>
         </div>
 
         {mobileOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 max-h-[75vh] overflow-y-auto">
-            <div className="px-4 py-3 grid grid-cols-2 gap-1">
-              {hasFavorites && (
-                <button
-                  onClick={() => scrollTo('favoritos')}
-                  className="text-left text-red-600 text-sm font-semibold uppercase tracking-wide py-2.5 px-3 rounded-lg hover:bg-red-50 cursor-pointer transition-colors flex items-center gap-2 col-span-2"
-                >
-                  <i className="ri-heart-fill text-sm" />
-                  Mis Favoritos ({favorites.length})
-                </button>
-              )}
-              {ALL_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => scrollTo(item.id)}
-                  className="text-left text-gray-800 text-sm font-semibold uppercase tracking-wide py-2.5 px-3 rounded-lg hover:bg-amber-50 hover:text-amber-700 cursor-pointer transition-colors"
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className="px-4 pt-1 pb-2 flex flex-col gap-2">
+            {/* ACCIONES PRINCIPALES — siempre visibles al abrir */}
+            <div className="px-4 pt-3 pb-1 flex flex-col gap-2">
               <button
                 onClick={handleVerMenu}
                 className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap transition-colors"
@@ -352,6 +346,52 @@ export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty }: NavbarPro
               >
                 <i className="ri-receipt-line" />
                 Ver mi cuenta
+              </Link>
+              <Link
+                to="/reservas"
+                onClick={() => setMobileOpen(false)}
+                className="w-full flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap transition-colors"
+              >
+                <i className="ri-calendar-event-line" /> Reservar Mesa
+              </Link>
+              <button
+                onClick={() => { setMobileOpen(false); handleCartOpen(); }}
+                className="w-full bg-amber-500 text-white px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+              >
+                <i className={itemCount > 0 ? 'ri-bill-line' : 'ri-add-circle-line'} />
+                {itemCount > 0 ? `Mi Cuenta (${itemCount})` : 'Ordenar Ahora'}
+              </button>
+            </div>
+
+            {/* Separador */}
+            <div className="px-4 py-1">
+              <div className="border-t border-gray-200"></div>
+            </div>
+
+            {/* OPCIONES SECUNDARIAS — scroll si quieren */}
+            <div className="px-4 pb-1 flex flex-col gap-2">
+              {hasFavorites && (
+                <button
+                  onClick={() => scrollTo('favoritos')}
+                  className="w-full text-left text-red-600 text-sm font-semibold uppercase tracking-wide py-2.5 px-3 rounded-lg hover:bg-red-50 cursor-pointer transition-colors flex items-center gap-2"
+                >
+                  <i className="ri-heart-fill text-sm" />
+                  Mis Favoritos ({favorites.length})
+                </button>
+              )}
+              <button
+                onClick={() => { setMobileOpen(false); onOpenReservations?.(); }}
+                className="w-full flex items-center justify-center gap-2 border border-amber-400 text-amber-700 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap hover:bg-amber-50 transition-colors"
+              >
+                <i className="ri-calendar-check-line" /> Mis Reservaciones
+              </button>
+              <Link
+                to="/guia"
+                onClick={() => setMobileOpen(false)}
+                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap transition-colors"
+              >
+                <i className="ri-book-open-line" />
+                Guía para clientes
               </Link>
               <button
                 onClick={() => { setMobileOpen(false); onOpenLoyalty?.(); }}
@@ -374,28 +414,24 @@ export default function Navbar({ logoUrl, onOrderNow, onOpenLoyalty }: NavbarPro
               >
                 <span>🎱</span> Mesas de Billar
               </Link>
-              <Link
-                to="/reservas"
-                onClick={() => setMobileOpen(false)}
-                className="w-full flex items-center justify-center gap-2 bg-amber-700 hover:bg-amber-800 text-white px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap transition-colors"
-              >
-                <i className="ri-calendar-event-line" /> Reservar Mesa
-              </Link>
-              <button
-                onClick={() => { setMobileOpen(false); const el = document.getElementById('mis-reservaciones'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
-                className="w-full flex items-center justify-center gap-2 border border-amber-400 text-amber-700 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap hover:bg-amber-50 transition-colors"
-              >
-                <i className="ri-calendar-check-line" /> Mis Reservaciones
-              </button>
             </div>
-            <div className="px-4 pb-4 pt-1">
-              <button
-                onClick={() => { setMobileOpen(false); handleCartOpen(); }}
-                className="w-full bg-amber-500 text-white px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wide cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
-              >
-                <i className={itemCount > 0 ? 'ri-bill-line' : 'ri-add-circle-line'} />
-                {itemCount > 0 ? `Mi Cuenta (${itemCount})` : 'Ordenar Ahora'}
-              </button>
+
+            {/* Separador */}
+            <div className="px-4 py-1">
+              <div className="border-t border-gray-200"></div>
+            </div>
+
+            {/* CATEGORÍAS — la parrilla de comida abajo */}
+            <div className="px-4 py-1 grid grid-cols-2 gap-1 pb-4">
+              {ALL_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollTo(item.id)}
+                  className="text-left text-gray-800 text-sm font-semibold uppercase tracking-wide py-2.5 px-3 rounded-lg hover:bg-amber-50 hover:text-amber-700 cursor-pointer transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           </div>
         )}

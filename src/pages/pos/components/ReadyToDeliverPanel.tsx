@@ -88,109 +88,120 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
 
   return (
     <div className="mb-4">
-      {/* Header de sección */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 flex items-center justify-center bg-orange-500 rounded-lg flex-shrink-0">
-            <i className="ri-user-received-2-line text-white text-sm" />
+      {/* Header de sección — ahora más prominente con gradiente */}
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl px-4 py-3 mb-3 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 flex items-center justify-center bg-white/25 rounded-xl flex-shrink-0">
+            <i className="ri-user-received-2-line text-white text-lg" />
           </div>
-          <h3 className="text-sm font-black text-gray-800">
-            Por Entregar
-          </h3>
-          <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">
-            {readyRounds.length} ronda{readyRounds.length !== 1 ? 's' : ''}
-          </span>
+          <div>
+            <h3 className="text-white font-black text-base leading-tight">
+              ⚠️ Por Entregar al Cliente
+            </h3>
+            <p className="text-white/80 text-xs mt-0.5">
+              {readyRounds.length} comanda{readyRounds.length !== 1 ? 's' : ''} lista{readyRounds.length !== 1 ? 's' : ''} en cocina · {totalItemsWaiting} artículo{totalItemsWaiting !== 1 ? 's' : ''} por llevar a la mesa
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-white font-black text-xl">
+            MXN${totalMoneyWaiting.toFixed(2)}
+          </span>
           <button
             onClick={() => setShowModal(true)}
-            className="text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all whitespace-nowrap border border-white/30"
           >
-            Ver todo
+            <i className="ri-fullscreen-line" />
+            Ampliar
           </button>
-          <span className="text-xs text-gray-400">
-            Lista en cocina, esperando mesera
-          </span>
         </div>
       </div>
 
-      {/* Tarjetas horizontales scrolleables */}
+      {/* Tarjetas horizontales scrolleables — más grandes y visibles */}
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
         {readyRounds.map((round) => {
           const urgent = round.minutesWaiting >= 10;
           return (
             <div
               key={`${round.accountId}-${round.folioNumber}`}
-              className={`snap-start flex-shrink-0 w-72 rounded-xl border-2 overflow-hidden ${
-                urgent ? 'border-red-300 bg-red-50' : 'border-orange-200 bg-white'
+              className={`snap-start flex-shrink-0 w-80 rounded-xl border-2 overflow-hidden ${
+                urgent ? 'border-red-400 bg-red-50 shadow-lg shadow-red-100' : 'border-orange-300 bg-white shadow-md'
               }`}
             >
-              {/* Card header */}
-              <div className={`px-3 py-2 flex items-center justify-between ${urgent ? 'bg-red-100 border-b border-red-200' : 'bg-orange-50 border-b border-orange-100'}`}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-7 h-7 flex items-center justify-center rounded-full flex-shrink-0 ${urgent ? 'bg-red-500' : 'bg-orange-500'}`}>
-                    <span className="text-white font-bold text-xs">
+              {/* Card header — nombre más grande */}
+              <div className={`px-4 py-3 flex items-center justify-between ${urgent ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/25 flex-shrink-0">
+                    <span className="text-white font-black text-base">
                       {round.accountName.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate leading-tight">
+                    <p className="text-base font-black truncate leading-tight">
                       {round.accountName}
                     </p>
-                    <p className="text-[11px] text-gray-500 truncate">
+                    <p className="text-white/80 text-xs truncate mt-0.5">
                       {round.areaLabel} · {round.spot}
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end flex-shrink-0">
-                  <span className={`text-xs font-black px-2 py-0.5 rounded-full ${urgent ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>
-                    #{String(round.folioNumber).padStart(2, '0')}
+                <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                  <span className="text-sm font-black px-2.5 py-1 rounded-full bg-white/25">
+                    Ronda #{String(round.folioNumber).padStart(2, '0')}
                   </span>
                   {urgent && (
-                    <span className="text-[10px] text-red-600 font-bold mt-0.5 animate-pulse">
-                      ¡{round.minutesWaiting}min!
+                    <span className="text-xs font-black mt-1 animate-pulse bg-white/30 px-2 py-0.5 rounded-full">
+                      ¡{round.minutesWaiting} min!
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Items */}
-              <div className="px-3 py-2 space-y-1">
+              {/* Items — más grandes */}
+              <div className={`px-4 py-3 space-y-1.5 ${urgent ? 'bg-red-50' : 'bg-white'}`}>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                  Lo que pidió:
+                </p>
                 {round.items.map(item => (
-                  <div key={item.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-bold text-gray-700">{item.quantity}x</span>
-                      <span className="text-gray-800 truncate">{item.product_name}</span>
+                  <div key={item.id} className="flex items-center justify-between text-sm py-0.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-black text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded-md text-xs">{item.quantity}x</span>
+                      <span className="text-gray-800 font-medium truncate">{item.product_name}</span>
                       {item.size && (
-                        <span className="text-gray-400 italic truncate">({item.size})</span>
+                        <span className="text-gray-400 italic text-xs truncate">({item.size})</span>
                       )}
                     </div>
-                    <span className="text-gray-500 font-medium flex-shrink-0">
-                      ${(item.unit_price * item.quantity).toFixed(2)}
+                    <span className="text-gray-600 font-semibold flex-shrink-0 ml-2 text-xs">
+                      MXN${(item.unit_price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Footer con tiempo y botón */}
-              <div className={`px-3 py-2 flex items-center justify-between ${urgent ? 'bg-red-50' : 'bg-gray-50'}`}>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <i className="ri-time-line" />
-                  <span>Lista desde {formatTime(round.oldestCreatedAt)}</span>
-                  <span className="text-gray-400">· {round.minutesWaiting}min</span>
+              {/* Footer con tiempo y total */}
+              <div className={`px-4 py-3 flex items-center justify-between border-t ${urgent ? 'bg-red-100 border-red-200' : 'bg-orange-50 border-orange-200'}`}>
+                <div className="flex items-center gap-2 text-xs">
+                  <i className={`${urgent ? 'ri-alarm-warning-fill text-red-500' : 'ri-time-line text-orange-500'}`} />
+                  <span className="text-gray-600 font-medium">Lista desde {formatTime(round.oldestCreatedAt)}</span>
+                  <span className={`font-black ${urgent ? 'text-red-600' : 'text-orange-600'}`}>
+                    · {round.minutesWaiting} min
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-gray-700">
-                  ${round.total.toFixed(2)}
-                </span>
               </div>
 
-              {/* Botón de acción */}
-              <div className="px-3 pb-3 pt-1">
+              {/* Total y botón de acción */}
+              <div className="px-4 py-3 flex items-center justify-between bg-white">
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Total comanda</p>
+                  <p className={`text-lg font-black ${urgent ? 'text-red-600' : 'text-orange-600'}`}>
+                    MXN${round.total.toFixed(2)}
+                  </p>
+                </div>
                 <button
                   onClick={() => handleMarkDelivered(round)}
-                  className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white rounded-xl py-2.5 text-xs font-black cursor-pointer transition-all whitespace-nowrap"
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white px-5 py-3 rounded-xl text-sm font-black cursor-pointer transition-all whitespace-nowrap shadow-sm"
                 >
-                  <i className="ri-user-received-2-line text-sm" />
+                  <i className="ri-user-received-2-line text-base" />
                   Entregado al Cliente
                 </button>
               </div>
@@ -199,7 +210,7 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
         })}
       </div>
 
-      {/* Modal: Ver todo */}
+      {/* Modal: Ver todo — también actualizado */}
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-10 pb-10 px-4 overflow-y-auto"
@@ -207,25 +218,25 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
         >
           <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden">
             {/* Modal header */}
-            <div className="bg-orange-500 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 flex items-center justify-center bg-white/20 rounded-lg">
-                  <i className="ri-user-received-2-line text-white text-lg" />
+            <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-5 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 flex items-center justify-center bg-white/20 rounded-xl">
+                  <i className="ri-user-received-2-line text-white text-2xl" />
                 </div>
                 <div>
-                  <h2 className="text-white font-black text-lg leading-tight">
-                    Por Entregar
+                  <h2 className="text-white font-black text-xl leading-tight">
+                    ⚠️ Por Entregar al Cliente
                   </h2>
-                  <p className="text-orange-100 text-xs">
-                    {readyRounds.length} ronda{readyRounds.length !== 1 ? 's' : ''} · {totalItemsWaiting} artículo{totalItemsWaiting !== 1 ? 's' : ''} · ${totalMoneyWaiting.toFixed(2)}
+                  <p className="text-orange-100 text-sm mt-0.5">
+                    {readyRounds.length} comanda{readyRounds.length !== 1 ? 's' : ''} lista{readyRounds.length !== 1 ? 's' : ''} en cocina · {totalItemsWaiting} artículo{totalItemsWaiting !== 1 ? 's' : ''} · MXN${totalMoneyWaiting.toFixed(2)} por llevar
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="w-9 h-9 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg text-white cursor-pointer transition-colors"
+                className="w-10 h-10 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-xl text-white cursor-pointer transition-colors"
               >
-                <i className="ri-close-line text-lg" />
+                <i className="ri-close-line text-xl" />
               </button>
             </div>
 
@@ -238,44 +249,47 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
                     <div
                       key={`modal-${round.accountId}-${round.folioNumber}`}
                       className={`rounded-xl border-2 overflow-hidden ${
-                        urgent ? 'border-red-300 bg-red-50' : 'border-orange-200 bg-white'
+                        urgent ? 'border-red-400 bg-red-50 shadow-md' : 'border-orange-200 bg-white'
                       }`}
                     >
                       {/* Card header */}
-                      <div className={`px-4 py-3 flex items-center justify-between ${urgent ? 'bg-red-100 border-b border-red-200' : 'bg-orange-50 border-b border-orange-100'}`}>
+                      <div className={`px-5 py-4 flex items-center justify-between ${urgent ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-9 h-9 flex items-center justify-center rounded-full flex-shrink-0 ${urgent ? 'bg-red-500' : 'bg-orange-500'}`}>
-                            <span className="text-white font-bold text-sm">
+                          <div className="w-11 h-11 flex items-center justify-center rounded-full bg-white/25 flex-shrink-0">
+                            <span className="text-white font-black text-lg">
                               {round.accountName.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-gray-900 truncate leading-tight">
+                            <p className="text-lg font-black truncate leading-tight">
                               {round.accountName}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
+                            <p className="text-white/80 text-sm truncate">
                               {round.areaLabel} · {round.spot}
                             </p>
                           </div>
                         </div>
-                        <div className="flex flex-col items-end flex-shrink-0 gap-1">
-                          <span className={`text-xs font-black px-2.5 py-1 rounded-full ${urgent ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'}`}>
-                            #{String(round.folioNumber).padStart(2, '0')}
+                        <div className="flex flex-col items-end flex-shrink-0 gap-1 ml-2">
+                          <span className="text-sm font-black px-3 py-1 rounded-full bg-white/25">
+                            Ronda #{String(round.folioNumber).padStart(2, '0')}
                           </span>
-                          <span className="text-[11px] text-gray-500 font-medium">
+                          <span className="text-white/90 text-xs font-medium">
                             {formatTime(round.oldestCreatedAt)}
                           </span>
                         </div>
                       </div>
 
                       {/* Items detallados */}
-                      <div className="px-4 py-3 space-y-2">
+                      <div className="px-5 py-4 space-y-2.5">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                          Lo que pidió:
+                        </p>
                         {round.items.map(item => (
-                          <div key={`modal-item-${item.id}`} className="flex items-start justify-between text-sm">
-                            <div className="flex items-start gap-2 min-w-0">
-                              <span className="font-bold text-gray-700 flex-shrink-0">{item.quantity}x</span>
+                          <div key={`modal-item-${item.id}`} className="flex items-start justify-between">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <span className="font-black text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md text-sm flex-shrink-0">{item.quantity}x</span>
                               <div className="min-w-0">
-                                <span className="text-gray-800 block">{item.product_name}</span>
+                                <span className="text-gray-800 font-medium block">{item.product_name}</span>
                                 {item.size && (
                                   <span className="text-gray-400 italic text-xs">({item.size})</span>
                                 )}
@@ -287,37 +301,35 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
                                 )}
                               </div>
                             </div>
-                            <span className="text-gray-500 font-medium flex-shrink-0 ml-2">
-                              ${(item.unit_price * item.quantity).toFixed(2)}
+                            <span className="text-gray-600 font-semibold flex-shrink-0 ml-3">
+                              MXN${(item.unit_price * item.quantity).toFixed(2)}
                             </span>
                           </div>
                         ))}
                       </div>
 
                       {/* Footer */}
-                      <div className={`px-4 py-3 flex items-center justify-between ${urgent ? 'bg-red-50' : 'bg-gray-50'}`}>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <i className="ri-time-line" />
-                          <span>Esperando desde {formatTime(round.oldestCreatedAt)}</span>
-                          <span className={`font-bold ${urgent ? 'text-red-600' : 'text-orange-600'}`}>
+                      <div className={`px-5 py-3 flex items-center justify-between ${urgent ? 'bg-red-100' : 'bg-orange-50'}`}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <i className={`${urgent ? 'ri-alarm-warning-fill text-red-500' : 'ri-time-line text-orange-500'}`} />
+                          <span className="text-gray-600 font-medium">Esperando desde {formatTime(round.oldestCreatedAt)}</span>
+                          <span className={`font-black ${urgent ? 'text-red-600 animate-pulse' : 'text-orange-600'}`}>
                             · {round.minutesWaiting} min
                           </span>
-                          {urgent && (
-                            <span className="text-red-600 font-black animate-pulse">
-                              ¡URGENTE!
-                            </span>
-                          )}
                         </div>
-                        <span className="text-sm font-bold text-gray-800">
-                          ${round.total.toFixed(2)}
+                        <span className="text-lg font-black text-gray-800">
+                          MXN${round.total.toFixed(2)}
                         </span>
                       </div>
 
-                      {/* Botón de acción */}
-                      <div className="px-4 pb-4 pt-1">
+                      {/* Acción */}
+                      <div className="px-5 py-4 bg-white flex items-center justify-between">
+                        <p className="text-xs text-gray-400">
+                          {round.items.reduce((s, i) => s + i.quantity, 0)} artículos listos
+                        </p>
                         <button
                           onClick={() => handleMarkDelivered(round)}
-                          className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white rounded-xl py-3 text-sm font-black cursor-pointer transition-all whitespace-nowrap"
+                          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white px-6 py-3 rounded-xl font-black cursor-pointer transition-all whitespace-nowrap shadow-sm"
                         >
                           <i className="ri-user-received-2-line text-base" />
                           Entregado al Cliente
@@ -331,14 +343,14 @@ export default function ReadyToDeliverPanel({ accounts, onRefresh }: ReadyToDeli
 
             {/* Modal footer */}
             <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-100">
-              <p className="text-xs text-gray-500">
-                Las comandas listas permanecen aquí hasta que se marquen como entregadas
+              <p className="text-sm text-gray-500 font-medium">
+                Las comandas listas permanecen aquí hasta que se marquen como entregadas al cliente
               </p>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-sm font-bold text-gray-600 hover:text-gray-800 bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 rounded-lg cursor-pointer transition-colors whitespace-nowrap"
+                className="text-sm font-bold text-gray-600 hover:text-gray-800 bg-white border border-gray-300 hover:border-gray-400 px-5 py-2.5 rounded-xl cursor-pointer transition-colors whitespace-nowrap"
               >
-                Cerrar
+                Cerrar Vista
               </button>
             </div>
           </div>

@@ -254,11 +254,11 @@ export default function WebOrderNotificationPanel({
           <p className="text-xs text-gray-400 text-center">
             <i className={`mr-1 ${realtimeStatus === 'connected' ? 'ri-wifi-line text-green-500' : realtimeStatus === 'disconnected' ? 'ri-wifi-off-line text-gray-500' : 'ri-loader-4-line animate-spin text-amber-500'}`} />
             {realtimeStatus === 'connected'
-              ? 'Alerta sonora activa · En tiempo real'
+              ? 'Voz y alerta activas · En tiempo real'
               : realtimeStatus === 'disconnected'
               ? 'Modo offline · Actualizando cada 8 segundos'
               : 'Conectando...'}
-            {activeNotifications.some(n => n.hasExtras) ? ' · Sonido especial para extras' : ''}
+            {activeNotifications.some(n => n.hasExtras) ? ' · Voz especial para extras' : ''}
           </p>
         </div>
       </div>

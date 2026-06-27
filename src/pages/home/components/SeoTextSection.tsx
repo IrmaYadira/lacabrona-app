@@ -18,7 +18,7 @@ export default function SeoTextSection() {
         </p>
 
         <p className="text-gray-400 text-sm leading-relaxed mb-3">
-          Nuestro menú está pensado para satisfacer todos los gustos. Las <strong className="text-white">alitas de pollo</strong> son nuestra especialidad: crujientes, jugosas y disponibles en 13 sabores diferentes que van desde los clásicos BBQ y Buffalo hasta opciones más atrevidas como Mango Habanero, Chipotle, Teriyaki, Parmesano, Ajo, Ranch, Cajún, Sriracha, Picante y Miel. Cada orden se prepara al momento con pollo fresco y nuestra salsa secreta que las hace irresistibles. También ofrecemos <strong className="text-white">boneless</strong> en los mismos sabores, perfectos para quienes prefieren disfrutar sin hueso.
+          Nuestro menú está pensado para satisfacer todos los gustos. Las <strong className="text-white">alitas de pollo</strong> son nuestra especialidad: crujientes, jugosas y disponibles en 12 sabores diferentes que van desde los clásicos BBQ y Buffalo hasta opciones más atrevidas como Mango Habanero, Chipotle, Tamarindo Hot, Lemon & Pepper y Maracuyá Habanero. Cada orden se prepara al momento con pollo fresco y nuestra salsa secreta que las hace irresistibles. También ofrecemos <strong className="text-white">boneless</strong> en los mismos sabores, perfectos para quienes prefieren disfrutar sin hueso.
         </p>
 
         <p className="text-gray-400 text-sm leading-relaxed mb-3">

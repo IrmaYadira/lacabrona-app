@@ -10,23 +10,36 @@ interface ShotShowModalProps {
 }
 
 export default function ShotShowModal({ item, onClose }: ShotShowModalProps) {
+  const [isDouble, setIsDouble] = useState(false);
   const [withVaso, setWithVaso] = useState(false);
   const [notes, setNotes] = useState("");
   const [qty, setQty] = useState(1);
 
   const { addItem, setIsOpen } = useCart();
 
+  const currentPrice = isDouble ? item.price * 2 : item.price;
+  const { discountedPrice: currentDiscountedPrice } = useFlashPrice(item.name, "Shots", currentPrice);
+  const ml = isDouble ? "60ml" : "30ml";
+  const doubleLabel = isDouble ? `60ml de ${item.name.replace("30ml", "").trim()} (doble)` : `30ml`;
+
   const handleAdd = () => {
     let finalNotes = "";
-    if (withVaso) {
-      finalNotes = `Con vaso de hielo, sal y limón (sin costo adicional)${notes.trim() ? ` — ${notes.trim()}` : ""}`;
-    } else if (notes.trim()) {
-      finalNotes = notes.trim();
+    const parts: string[] = [];
+    if (isDouble) {
+      parts.push("Doble (60ml)");
     }
+    if (withVaso) {
+      parts.push("Con vaso de hielo, sal y limón (sin costo adicional)");
+    }
+    if (notes.trim()) {
+      parts.push(notes.trim());
+    }
+    finalNotes = parts.join(" — ");
 
     for (let i = 0; i < qty; i++) {
       addItem({
         ...item,
+        price: currentPrice,
         notes: finalNotes || undefined,
       });
     }
@@ -45,7 +58,7 @@ export default function ShotShowModal({ item, onClose }: ShotShowModalProps) {
         <div className="bg-amber-500 px-4 py-3 md:px-5 md:py-4">
           <h3 className="text-white font-bold text-base md:text-lg leading-snug">{item.name}</h3>
           <p className="text-white/80 text-xs mt-0.5">
-            Shot de 30ml del destilado puro
+            {isDouble ? "Shot de 60ml del destilado puro (doble)" : "Shot de 30ml del destilado puro"}
           </p>
         </div>
 
@@ -59,9 +72,11 @@ export default function ShotShowModal({ item, onClose }: ShotShowModalProps) {
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">{item.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isDouble ? item.description.replace("30ml", "60ml (doble)") : item.description}
+                </p>
                 <FlashPrice
-                  price={item.price}
+                  price={currentPrice}
                   productName={item.name}
                   category="Shots"
                   variant="light"
@@ -69,6 +84,50 @@ export default function ShotShowModal({ item, onClose }: ShotShowModalProps) {
                   className="mt-1"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Selector Simple / Doble */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              <i className="ri-restaurant-line mr-1 text-amber-500" />
+              Tamaño
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setIsDouble(false)}
+                className={`p-4 rounded-lg border-2 text-center transition-all cursor-pointer ${
+                  !isDouble
+                    ? "border-amber-500 bg-amber-50 text-amber-700"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-600"
+                }`}
+              >
+                <div className="text-lg font-bold">Simple</div>
+                <div className="text-xs mt-1">30ml</div>
+                <div className="text-sm font-bold mt-1 text-amber-600">
+                  <FlashPrice
+                    price={item.price}
+                    productName={item.name}
+                    category="Shots"
+                    variant="light"
+                    size="sm"
+                  />
+                </div>
+              </button>
+              <button
+                onClick={() => setIsDouble(true)}
+                className={`p-4 rounded-lg border-2 text-center transition-all cursor-pointer ${
+                  isDouble
+                    ? "border-amber-500 bg-amber-50 text-amber-700"
+                    : "border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-600"
+                }`}
+              >
+                <div className="text-lg font-bold">Doble</div>
+                <div className="text-xs mt-1">60ml</div>
+                <div className="text-sm font-bold mt-1 text-amber-600">
+                  ${item.price * 2}
+                </div>
+              </button>
             </div>
           </div>
 
@@ -134,34 +193,27 @@ export default function ShotShowModal({ item, onClose }: ShotShowModalProps) {
         </div>
 
         {/* Footer */}
-        <ShotAddFooter item={item} qty={qty} onClose={onClose} onAdd={handleAdd} />
+        <div className="border-t border-gray-100 px-4 md:px-5 py-3 md:py-4 flex gap-2 md:gap-3">
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors whitespace-nowrap"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleAdd}
+            className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm text-center"
+          >
+            <span className="block leading-tight">
+              <i className="ri-add-line mr-1" />
+              Agregar {qty > 1 ? `${qty}` : ""} al carrito
+            </span>
+            <span className="block text-xs font-bold opacity-90">
+              ${(currentDiscountedPrice * qty).toFixed(2)}
+            </span>
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function ShotAddFooter({ item, qty, onClose, onAdd }: { item: CartItem; qty: number; onClose: () => void; onAdd: () => void }) {
-  const { discountedPrice } = useFlashPrice(item.name, "Shots", item.price);
-  return (
-    <div className="border-t border-gray-100 px-4 md:px-5 py-3 md:py-4 flex gap-2 md:gap-3">
-      <button
-        onClick={onClose}
-        className="flex-shrink-0 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors whitespace-nowrap"
-      >
-        Cancelar
-      </button>
-      <button
-        onClick={onAdd}
-        className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold cursor-pointer transition-colors shadow-sm text-center"
-      >
-        <span className="block leading-tight">
-          <i className="ri-add-line mr-1" />
-          Agregar {qty > 1 ? `${qty}` : ""} al carrito
-        </span>
-        <span className="block text-xs font-bold opacity-90">
-          ${(discountedPrice * qty).toFixed(2)}
-        </span>
-      </button>
     </div>
   );
 }

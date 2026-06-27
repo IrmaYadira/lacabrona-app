@@ -11,7 +11,7 @@
     (function() {
       try {
         sessionStorage.setItem('__spa_redirect', window.location.pathname + window.location.search + window.location.hash);
-      } catch (e) {}
+      } catch (e) { /* sessionStorage no disponible */ }
       window.location.replace('/');
     })();
   </script>

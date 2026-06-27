@@ -1,6 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import PosLogin from './components/PosLogin';
-import { usePageSEO } from '@/hooks/usePageSEO';
 
 const PosPanel = lazy(() => import('./components/PosPanel'));
 
@@ -8,13 +7,6 @@ export default function PosPage() {
   const [authenticated, setAuthenticated] = useState(false);
 
   // Panel POS interno del bar, no debe indexarse
-  usePageSEO({
-    title: 'POS | La Cabrona',
-    description: 'Sistema de punto de venta interno de La Cabrona Alitas & Beer.',
-    canonicalUrl: 'https://barlacabrona.com/pos',
-    noindex: true,
-  });
-
   useEffect(() => {
     if (sessionStorage.getItem('pos_auth') === '1') {
       setAuthenticated(true);

@@ -2,8 +2,9 @@ import { useState, useCallback, useEffect } from "react";
 import { useCart, type CartItem } from "@/pages/home/context/CartContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useActiveAccount } from "@/hooks/useActiveAccount";
-import { usePageSEO } from "@/hooks/usePageSEO";
-import { SITE_URL } from "@/lib/site-url";
+import JsonLd from "@/components/JsonLd";
+import MenuTour from "@/components/feature/MenuTour";
+import { menuTourSteps } from "./menuTourSteps";
 import EnablePushBanner from "./components/EnablePushBanner";
 import SessionChip from "./components/SessionChip";
 import CompactFAB from "./components/CompactFAB";
@@ -17,6 +18,7 @@ import BurgerOptionsModal from "@/pages/home/components/BurgerOptionsModal";
 import WingSauceModal from "@/pages/home/components/WingSauceModal";
 import MicheladaFlavorModal from "@/pages/home/components/MicheladaFlavorModal";
 import ProductNoteModal from "./components/ProductNoteModal";
+import FirstTimeBanner from "./components/FirstTimeBanner";
 import {
   wingsMenu,
   bonelessMenu,
@@ -81,10 +83,16 @@ function getCategoryPausedKey(itemId: number, catKey: string): string {
     case 'rusas':
     case 'vasos':
       return `vaso-${itemId - 500}`;
-    case 'caballitos':
+    case 'caballitos': {
+      // IDs expandidos: 60101 → shot original 1; IDs antiguos: 600 + id original
+      if (itemId >= 60100) return `shot-${Math.floor((itemId - 60100) / 10)}`;
       return `shot-${itemId - 600}`;
-    case 'preparados':
-      return `prep-${itemId - 700}-sencillo`; // precio base
+    }
+    case 'preparados': {
+      // IDs expandidos: 70101 → prep original 1; IDs antiguos: 700 + id original
+      if (itemId >= 70100) return `prep-${Math.floor((itemId - 70100) / 10)}-sencillo`;
+      return `prep-${itemId - 700}-sencillo`;
+    }
     case 'azulitos':
       return `azul-${itemId - 900}`;
     case 'latas-alcohol':
@@ -124,6 +132,76 @@ function useMenuPaused(): Set<string> {
 }
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
+
+const MENU_JSONLD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://barlacabrona.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Menu", "item": "https://barlacabrona.com/menu" }
+      ]
+    },
+    {
+      "@type": "Menu",
+      "name": "Menu de La Cabrona Alitas & Beer",
+      "description": "Menu completo de alitas, boneless, hamburguesas, cervezas y bebidas en La Cabrona Zapopan, Jalisco.",
+      "hasMenuSection": [
+        { "@type": "MenuSection", "name": "Alitas y Boneless", "description": "12 sabores disponibles en alitas y boneless. Media orden (5 pzas) y orden completa (10 pzas).", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Orden Completa de Alitas (10 piezas)", "description": "Alitas de pollo crujientes y jugosas, fritas a la perfeccion y banadas en la salsa de tu eleccion. Servidas con aderezo ranch, zanahorias y apio.", "offers": { "@type": "Offer", "price": 190, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Media Orden de Alitas (5 piezas)", "description": "5 alitas crujientes con la salsa de tu eleccion entre 12 sabores. Servidas con aderezo ranch.", "offers": { "@type": "Offer", "price": 95, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Orden Completa de Boneless (10 piezas)", "description": "Trocitos de pechuga de pollo empanizados y fritos, crujientes por fuera y jugosos por dentro. 12 sabores disponibles.", "offers": { "@type": "Offer", "price": 190, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Media Orden de Boneless (5 piezas)", "description": "5 boneless empanizados con la salsa de tu eleccion. Servidos con aderezo ranch.", "offers": { "@type": "Offer", "price": 95, "priceCurrency": "MXN" } }
+        ] },
+        { "@type": "MenuSection", "name": "Hamburguesas", "description": "Hamburguesas artesanales con carne de res de primera calidad y pan recien horneado.", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Hamburguesa de Sirloin con Tocino", "description": "Jugosa carne de sirloin a la parrilla con tocino crujiente, lechuga, jitomate, cebolla y aderezos. Incluye acompanamiento.", "offers": { "@type": "Offer", "price": 95, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hamburguesa de Res con Tocino", "description": "Carne de res a la parrilla con tocino crujiente, queso cheddar, lechuga, jitomate y cebolla.", "offers": { "@type": "Offer", "price": 95, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hamburguesa de Pollo", "description": "Pechuga de pollo empanizada y dorada con lechuga, jitomate, cebolla y aderezos.", "offers": { "@type": "Offer", "price": 95, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hamburguesa Doble Carne con Tocino", "description": "Doble carne de res a la parrilla con tocino crujiente, doble queso, lechuga, jitomate y cebolla.", "offers": { "@type": "Offer", "price": 115, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hamburguesa Cielo, Mar y Tierra", "description": "La mas cabrona: res, pollo empanizado y camarones cocidos con queso blanco, lechuga, jitomate y cebolla.", "offers": { "@type": "Offer", "price": 120, "priceCurrency": "MXN" } }
+        ] },
+        { "@type": "MenuSection", "name": "Hot Dogs", "description": "Hot dogs estilo norteno con ingredientes generosos y salsas caseras.", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Hot Dog Menos Sencillo", "description": "Salchicha cocida con crema, mayonesa, jitomate, cebolla, cebolla guisada, sal y panela en pan de buenas noches de Bimbo.", "offers": { "@type": "Offer", "price": 25, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hot Dog Menos con Papas Doradas", "description": "Hot dog norteno clasico acompanado de papas doradas crujientes.", "offers": { "@type": "Offer", "price": 40, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Hot Dog Menos con Papas a la Francesa", "description": "Hot dog norteno clasico acompanado de clasicas papas a la francesa doradas.", "offers": { "@type": "Offer", "price": 65, "priceCurrency": "MXN" } }
+        ] },
+        { "@type": "MenuSection", "name": "Micheladas", "description": "Micheladas de 1 litro con cerveza, limon, salsa inglesa y clamato. 4 sabores disponibles.", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Michelada 1 Litro", "description": "Michelada de 1 litro preparada con cerveza fria, sal, limon, tajin, tabasco, salsas negras, pimienta negra, chamoy y hielo. 4 sabores: Clamato, Tamarindo, Mango y Pina.", "offers": { "@type": "Offer", "price": 90, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Michelada 1 Litro con Camaron", "description": "Michelada de 1 litro con camaron fresco. Preparada con cerveza fria, sal, limon, tajin, tabasco, salsas negras y chamoy.", "offers": { "@type": "Offer", "price": 110, "priceCurrency": "MXN" } }
+        ] },
+        { "@type": "MenuSection", "name": "Cervezas", "description": "Cervezas nacionales e importadas: Corona, Pacifico, Modelo, Victoria, Heineken y mas.", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Mega Corona Extra (1.2L)", "description": "Corona Extra de 1.2 litros bien fria. Para compartir o para los verdaderos cabrones.", "offers": { "@type": "Offer", "price": 85, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Mega Victoria (1.2L)", "description": "Cerveza tradicional mexicana Victoria de 1.2 litros bien fria.", "offers": { "@type": "Offer", "price": 85, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Mega Pacifico (1.2L)", "description": "Pacifico de 1.2 litros. Clara, suave y cabrona para compartir.", "offers": { "@type": "Offer", "price": 90, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Medio Corona Extra Clara (355ml)", "description": "Media cerveza Corona Extra Clara en botella bien fria, espumosa y refrescante.", "offers": { "@type": "Offer", "price": 40, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Cubeta 10 Coronas Extra (355ml)", "description": "Cubeta con 10 cervezas Corona Extra de medio bien frias con hielo. Para compartir en la mesa.", "offers": { "@type": "Offer", "price": 350, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Ampolleta Corona Extra Clara (210ml)", "description": "Corona Extra en presentacion ampolleta de 210ml. Clara, ligera y bien fria.", "offers": { "@type": "Offer", "price": 20, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Barril Clara XX Lager (1L)", "description": "Cerveza de barril XX Lager directo del barril. Clara, refrescante y bien tirada.", "offers": { "@type": "Offer", "price": 75, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Barril Oscura Indio (1L)", "description": "Cerveza de barril Indio oscura. Cuerpo robusto con notas tostadas y espuma cremosa.", "offers": { "@type": "Offer", "price": 65, "priceCurrency": "MXN" } }
+        ] },
+        { "@type": "MenuSection", "name": "Bebidas Preparadas", "description": "Vasos preparados, shots, preparados, azulitos, charros y rusas.", "hasMenuItem": [
+          { "@type": "MenuItem", "name": "Vaso Chelado", "description": "Sal, limon y hielo. El clasico preparado para refrescar tu cerveza.", "offers": { "@type": "Offer", "price": 19, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Vaso Clamatado", "description": "Clamato, sal, limon, salsas negras y hielo. El clasico vaso clamatado bien preparado.", "offers": { "@type": "Offer", "price": 55, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Litro de Clamatado", "description": "Litro cabron de clamato con limon, sal, salsas negras y hielo. Para compartir o para los que aguantan.", "offers": { "@type": "Offer", "price": 100, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Rusa de Squirt", "description": "Squirt bien frio con agua mineral, hielo, sal y limon. Refrescante y sin alcohol.", "offers": { "@type": "Offer", "price": 40, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Shot Centenario Reposado 30ml", "description": "Shot de tequila Centenario Reposado de 30ml. El destilado puro para pistear como un cabron.", "offers": { "@type": "Offer", "price": 60, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Shot Red Label 30ml", "description": "Shot de whisky Johnnie Walker Red Label de 30ml.", "offers": { "@type": "Offer", "price": 65, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Bacacho (Bacardi + Coca-Cola)", "description": "30ml de Bacardi con Coca-Cola, agua mineral y hielo. El clasico preparado de ron.", "offers": { "@type": "Offer", "price": 60, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Tequilita (Centenario + Squirt)", "description": "30ml de Centenario Reposado con Squirt, agua mineral y hielo. Tequila bien preparado.", "offers": { "@type": "Offer", "price": 70, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Azulito Medio Litro", "description": "Preparado azulito con vodka, licor de naranja, curacao azul, chamoy de moras azules, Sprite y hielo.", "offers": { "@type": "Offer", "price": 70, "priceCurrency": "MXN" } },
+          { "@type": "MenuItem", "name": "Charro Guero 1 Litro", "description": "Preparado charro guero con tequila de casa, limon, sal, hielo, agua mineral y Squirt.", "offers": { "@type": "Offer", "price": 80, "priceCurrency": "MXN" } }
+        ] }
+      ],
+      "inLanguage": "es",
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/InStock",
+        "priceCurrency": "MXN"
+      }
+    }
+  ]
+};
 
 interface MenuCategory {
   key: string;
@@ -177,19 +255,19 @@ function buildCategories(): MenuCategory[] {
       {
         id: 1,
         name: "Orden Completa de Alitas (10 PIEZAS)",
-        description: `${wingsMenu.description} 10 piezas. Elige una de nuestras 13 salsas.`,
+        description: `${wingsMenu.description} 10 piezas. Elige una de nuestras 12 salsas.`,
         price: wingsMenu.prices["Orden Completa (10 pzas)"],
         image: wingsMenu.image,
-        tags: ["10 piezas", "13 salsas"],
+        tags: ["10 piezas", "12 salsas"],
         sauces: wingsMenu.sauces,
       },
       {
         id: 2,
         name: "Media Orden de Alitas (5 PIEZAS)",
-        description: `${wingsMenu.description} 5 piezas. Elige una de nuestras 13 salsas.`,
+        description: `${wingsMenu.description} 5 piezas. Elige una de nuestras 12 salsas.`,
         price: wingsMenu.prices["Media Orden (5 pzas)"],
         image: wingsMenu.image,
-        tags: ["5 piezas", "13 salsas"],
+        tags: ["5 piezas", "12 salsas"],
         sauces: wingsMenu.sauces,
       },
     ],
@@ -205,19 +283,19 @@ function buildCategories(): MenuCategory[] {
       {
         id: 101,
         name: "Orden Completa de Boneless (10 PIEZAS)",
-        description: `${bonelessMenu.description} 10 piezas. Elige una de nuestras 13 salsas.`,
+        description: `${bonelessMenu.description} 10 piezas. Elige una de nuestras 12 salsas.`,
         price: bonelessMenu.prices["Orden Completa (10 pzas)"],
         image: bonelessMenu.image,
-        tags: ["10 piezas", "13 salsas"],
+        tags: ["10 piezas", "12 salsas"],
         sauces: bonelessMenu.sauces,
       },
       {
         id: 102,
         name: "Media Orden de Boneless (5 PIEZAS)",
-        description: `${bonelessMenu.description} 5 piezas. Elige una de nuestras 13 salsas.`,
+        description: `${bonelessMenu.description} 5 piezas. Elige una de nuestras 12 salsas.`,
         price: bonelessMenu.prices["Media Orden (5 pzas)"],
         image: bonelessMenu.image,
-        tags: ["5 piezas", "13 salsas"],
+        tags: ["5 piezas", "12 salsas"],
         sauces: bonelessMenu.sauces,
       },
     ],
@@ -442,30 +520,63 @@ function buildCategories(): MenuCategory[] {
     label: "Shots de Tequila, Ron, Whisky, Brandy",
     emoji: "🥃",
     image: "https://readdy.ai/api/search-image?query=tequila%20shots%20with%20salt%20rim%20lime%20wedge%20arranged%20on%20dark%20bar%20counter%20warm%20lighting%20restaurant%20photography%20dark%20background%20mexican%20spirits&width=400&height=250&seq=menu-shots-banner&orientation=landscape",
-    items: shotShowsMenu.map((s) => ({
-      id: 600 + s.id,
-      name: s.name,
-      description: s.description,
-      price: s.price,
-      image: s.image,
-      tags: s.tags,
-    })),
+    items: shotShowsMenu.flatMap((s) => [
+      {
+        id: 60100 + (s.id * 10) + 1,
+        name: `${s.name} · Sencillo`,
+        description: s.description,
+        price: s.price,
+        priceLabel: '30ml',
+        image: s.image,
+        tags: [...(s.tags || []), 'Sencillo'],
+      },
+      {
+        id: 60100 + (s.id * 10) + 2,
+        name: `${s.name} · Doble`,
+        description: s.description.replace('30ml', '60ml (doble)'),
+        price: s.price * 2,
+        priceLabel: '60ml',
+        image: s.image,
+        tags: [...(s.tags || []), 'Doble'],
+      },
+    ]),
   });
 
-  // Preparados
+  // Preparados — Simple / Doble / Litro
   cats.push({
     key: "preparados",
     label: "Preparados",
     emoji: "🍹",
     image: "https://readdy.ai/api/search-image?query=mexican%20prepared%20drink%20with%20tequila%20squirt%20lime%20ice%20in%20tall%20glass%20on%20dark%20bar%20counter%20warm%20lighting%20restaurant%20photography%20dark%20background%20refreshing%20cocktail&width=400&height=250&seq=menu-preparados-banner&orientation=landscape",
-    items: preparadosMenu.map((s) => ({
-      id: 700 + s.id,
-      name: s.name,
-      description: s.description,
-      price: s.basePrice,
-      image: s.image,
-      tags: s.tags,
-    })),
+    items: preparadosMenu.flatMap((s) => [
+      {
+        id: 70100 + (s.id * 10) + 1,
+        name: `${s.name} · Sencillo`,
+        description: s.description,
+        price: s.basePrice,
+        priceLabel: '30ml',
+        image: s.image,
+        tags: [...(s.tags || []), 'Sencillo'],
+      },
+      {
+        id: 70100 + (s.id * 10) + 2,
+        name: `${s.name} · Doble`,
+        description: s.doubleDescription || s.description.replace('30ml', '60ml (doble)'),
+        price: s.basePrice * 2,
+        priceLabel: '60ml',
+        image: s.image,
+        tags: [...(s.tags || []), 'Doble'],
+      },
+      {
+        id: 70100 + (s.id * 10) + 3,
+        name: `${s.name} · Litro`,
+        description: s.description.replace('30ml', '90ml (litro)'),
+        price: s.basePrice * 3,
+        priceLabel: '90ml',
+        image: s.image,
+        tags: [...(s.tags || []), 'Litro'],
+      },
+    ]),
   });
 
   // Azulitos y Charros
@@ -596,6 +707,10 @@ function groupItemsByPrice(items: MenuItem[]): PriceGroup[] {
 }
 
 export default function MenuPage() {
+  useEffect(() => {
+    document.title = 'Menú Completo La Cabrona | Alitas, Boneless, Cervezas & Bebidas en Zapopan';
+  }, []);
+
   const categories = buildCategories();
   const { activeAccount } = useActiveAccount();
   const { addItem, setIsOpen, itemCount, total, flashDiscount, isFavorite, toggleFavorite, setAccountId } = useCart();
@@ -619,84 +734,6 @@ export default function MenuPage() {
   // Productos pausados en tiempo real
   const pausedIds = useMenuPaused();
 
-  usePageSEO({
-    title: "Menú La Cabrona Alitas & Beer Zapopan | Alitas y Boneless",
-    description: "Explora nuestro menú completo en La Cabrona Zapopan: alitas de pollo crujientes en 13 salsas diferentes, boneless, hamburguesas artesanales, hot dogs meños estilo norteño, combos especiales, micheladas de 1 litro, cervezas Corona, Pacífico, cervezas de medio y ampolletas, vasos preparados, shots de tequila, ron y whisky, preparados, azulitos, charros, cerveza de barril, refrescos y jugos. Pide por WhatsApp o desde tu mesa.",
-    canonicalUrl: `${SITE_URL}/menu`,
-    ogImage: LOGO_URL,
-    keywords: "menú La Cabrona, alitas Zapopan, boneless, cervezas Corona, micheladas, hamburguesas Zapopan, menú bar El Mante, alitas pollo, bar alitas Jalisco",
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Menú Completo", "item": `${SITE_URL}/menu` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "Menu",
-        "name": "Menú La Cabrona Alitas & Beer",
-        "url": `${SITE_URL}/menu`,
-        "inLanguage": "es",
-        "hasMenuSection": [
-          { "@type": "MenuSection", "name": "Alitas de Pollo", "description": "Alitas crujientes en 13 sabores: BBQ, Buffalo, Mango Habanero, Limón, Chipotle, Teriyaki, Parmesano, Ajo, Ranch, Cajún, Sriracha, Picante y Miel. Las mejores alitas en Zapopan, preparadas al momento con pollo fresco y salsas artesanales." },
-          { "@type": "MenuSection", "name": "Boneless", "description": "Trozos de pollo sin hueso en los mismos 13 sabores que las alitas. Perfectos para compartir entre amigos. Crujientes por fuera y jugosos por dentro." },
-          { "@type": "MenuSection", "name": "Hamburguesas", "description": "Hamburguesas artesanales estilo bar con carne de res, ingredientes frescos y pan artesanal. Opciones clásicas y especiales." },
-          { "@type": "MenuSection", "name": "Hot Dogs Meños", "description": "Hot dogs al estilo del norte de México con toppings generosos y salchicha de alta calidad." },
-          { "@type": "MenuSection", "name": "Cervezas y Bebidas", "description": "Cervezas nacionales e importadas, micheladas preparadas, clamatos, shots de tequila, ron y whisky, bebidas preparadas y refrescos. Cervezas frías en Zapopan." }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "¿Cuántos sabores de alitas tienen en La Cabrona Zapopan?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Contamos con 13 sabores: BBQ, Buffalo, Mango Habanero, Limón, Chipotle, Teriyaki, Parmesano, Ajo, Ranch, Cajún, Sriracha, Picante y Miel. Todas las alitas se preparan al momento con pollo fresco."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cómo hago un pedido en La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Puedes pedir directamente desde tu mesa usando nuestro menú digital, hacer tu pedido por WhatsApp al 33-4856-7795 para llevar o servicio a domicilio en Zapopan, o pedir con los meseros en la barra. Aceptamos efectivo, tarjeta y transferencias."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Tienen opciones vegetarianas en La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sí, tenemos botanas como papas fritas, aros de cebolla y dedos de queso. También contamos con cervezas sin alcohol, refrescos y jugos."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cuál es el horario de La Cabrona en Zapopan?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Lunes a jueves de 13:00 a 00:00 hrs, viernes y sábado de 14:00 a 02:00 hrs, y domingo de 14:00 a 23:00 hrs. Ubicados en Calle Sinaloa 690, Colonia El Mante, Zapopan, Jalisco."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Hacen servicio a domicilio en Zapopan?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sí, puedes hacer tu pedido por WhatsApp al 33-4856-7795 y coordinar la entrega a domicilio en Zapopan y zonas aledañas. También puedes ordenar para llevar directamente en el local."
-            }
-          }
-        ]
-      }
-    ],
-  });
-
   const [openCats, setOpenCats] = useState<Set<string>>(new Set());
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -712,6 +749,7 @@ export default function MenuPage() {
     return true;
   });
   const [showFullSeo, setShowFullSeo] = useState(true);
+  const [tourVisible, setTourVisible] = useState(false);
 
   const toggleSound = useCallback(() => {
     setSoundEnabled(prev => {
@@ -868,6 +906,7 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-white pb-80 md:pb-96">
+      <JsonLd data={MENU_JSONLD} />
       {/* Header */}
       <header className="bg-gray-900 text-white">
         <div className="w-full px-4 md:px-8 max-w-7xl mx-auto py-4 md:py-6">
@@ -880,7 +919,7 @@ export default function MenuPage() {
                 src={LOGO_URL}
                 alt="La Cabrona"
                 title="La Cabrona Alitas & Beer"
-                className="h-10 md:h-16 w-auto object-contain flex-shrink-0"
+                className="h-11 md:h-16 w-auto object-contain flex-shrink-0"
               />
               <div className="text-left hidden sm:block min-w-0">
                 <span className="font-[Bebas_Neue] text-xl md:text-2xl tracking-wider">
@@ -912,6 +951,13 @@ export default function MenuPage() {
             >
               <i className={`${soundEnabled ? 'ri-volume-up-line' : 'ri-volume-mute-line'} text-base md:text-lg`} />
             </button>
+            <a
+              href="/guia"
+              title="Guía para clientes — Cómo disfrutar La Cabrona"
+              className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full cursor-pointer transition-all flex-shrink-0 bg-white/10 text-white hover:bg-green-500 hover:text-white"
+            >
+              <i className="ri-book-open-line text-base md:text-lg" />
+            </a>
           </div>
         </div>
       </header>
@@ -941,6 +987,9 @@ export default function MenuPage() {
           }
         }}
       />
+
+      {/* Banner ¿Primera vez? */}
+      <FirstTimeBanner />
 
       {/* Session Chip */}
       <SessionChip />
@@ -1021,14 +1070,14 @@ export default function MenuPage() {
         <div className="w-full px-3 md:px-8 max-w-7xl mx-auto" style={{ overscrollBehaviorX: 'contain' }}>
           <div className="flex items-center gap-2 py-2.5 overflow-x-auto scrollbar-hide">
             {/* Search input */}
-            <div className="flex items-center gap-1.5 flex-shrink-0 bg-gray-100 rounded-full px-3 py-1.5">
+            <div className="flex items-center gap-1.5 flex-shrink-0 bg-gray-100 rounded-full px-3 py-2">
               <i className="ri-search-line text-gray-400 text-sm" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar..."
-                className="w-24 sm:w-40 md:w-56 bg-transparent text-sm focus:outline-none placeholder-gray-400"
+                className="w-[110px] sm:w-40 md:w-56 bg-transparent text-sm focus:outline-none placeholder-gray-400"
               />
             </div>
             <div className="w-px h-5 bg-gray-200 flex-shrink-0" />
@@ -1036,7 +1085,7 @@ export default function MenuPage() {
               <button
                 key={cat.key}
                 onClick={() => scrollToCat(cat.key)}
-                className={`flex-shrink-0 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full text-[11px] md:text-xs font-semibold cursor-pointer transition-all whitespace-nowrap border ${
+                className={`flex-shrink-0 px-2.5 md:px-3 py-1.5 md:py-1.5 rounded-full text-[12px] md:text-xs font-semibold cursor-pointer transition-all whitespace-nowrap border ${
                   openCats.has(cat.key)
                     ? 'bg-gray-900 text-white border-gray-900'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
@@ -1053,13 +1102,13 @@ export default function MenuPage() {
       {/* Menu Content */}
       <main className="w-full px-4 md:px-8 max-w-3xl mx-auto py-6 md:py-12 pb-24 md:pb-28">
         <h1 className="font-[Bebas_Neue] text-3xl md:text-4xl text-gray-900 tracking-wide mb-4 md:mb-6">
-          Menú Completo — Alitas, Boneless &amp; Cervezas
+          Menú Completo — Alitas, Boneless &amp; Cervezas en La Cabrona Zapopan
         </h1>
 
         {/* Info Banner */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 md:p-4 mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <p className="text-xs md:text-sm text-gray-700 leading-relaxed">
+            <p className="text-sm md:text-sm text-gray-700 leading-relaxed">
               <i className="ri-restaurant-line text-amber-600 mr-1" />
               <strong>{totalItems}</strong> platillos —{" "}
               <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer" className="text-amber-600 font-semibold hover:underline">
@@ -1067,8 +1116,17 @@ export default function MenuPage() {
               </a>
               {" "}o agrega al carrito
             </p>
-            <div className="sm:hidden">
-              <LoyaltyPointsBadge cartTotal={total} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTourVisible(true)}
+                className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-3 py-1.5 rounded-full cursor-pointer transition-all active:scale-95 whitespace-nowrap"
+              >
+                <i className="ri-guide-line text-sm" />
+                Recorrido virtual
+              </button>
+              <div className="sm:hidden">
+                <LoyaltyPointsBadge cartTotal={total} />
+              </div>
             </div>
           </div>
         </div>
@@ -1175,7 +1233,7 @@ export default function MenuPage() {
                             >
                               {/* Product image */}
                               {item.image && (
-                                <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                                <div className="relative w-[60px] h-[60px] md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                                   <img
                                     src={item.image}
                                     alt={item.name}
@@ -1190,10 +1248,10 @@ export default function MenuPage() {
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-sm md:text-base font-bold text-gray-900 leading-snug">
+                                <h3 className="text-[15px] md:text-base font-bold text-gray-900 leading-snug">
                                   {item.name}
                                 </h3>
-                                <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">
+                                <p className="text-[13px] md:text-sm text-gray-500 mt-1 leading-relaxed">
                                   {item.description}
                                 </p>
                                 {item.tags && item.tags.length > 0 && (
@@ -1257,7 +1315,7 @@ export default function MenuPage() {
                       >
                         {/* Product image */}
                         {item.image && (
-                          <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                          <div className="relative w-[60px] h-[60px] md:w-16 md:h-16 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                             <img
                               src={item.image}
                               alt={item.name}
@@ -1274,14 +1332,14 @@ export default function MenuPage() {
                         <div className="flex-1 min-w-0">
                           {/* Name + Price row */}
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="text-sm md:text-base font-bold text-gray-900 leading-snug flex-1 min-w-0 pr-1">
+                            <h3 className="text-[15px] md:text-base font-bold text-gray-900 leading-snug flex-1 min-w-0 pr-1">
                               {item.name}
                             </h3>
                             <span className="text-base md:text-lg font-bold text-amber-600 flex-shrink-0 whitespace-nowrap">
                               ${item.price.toFixed(2)}
                             </span>
                           </div>
-                          <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">
+                          <p className="text-[13px] md:text-sm text-gray-500 mt-1 leading-relaxed">
                             {item.description}
                           </p>
                           {item.tags && item.tags.length > 0 && (
@@ -1389,10 +1447,10 @@ export default function MenuPage() {
               Bienvenido al <strong>menú digital de La Cabrona Alitas &amp; Beer</strong>, el bar de alitas más popular de Zapopan, Jalisco. Ubicados en Calle Sinaloa 690, Colonia El Mante, nos especializamos en ofrecer una experiencia gastronómica única que combina alitas de pollo crujientes, cervezas frías bien escarchadas, micheladas preparadas al momento y un ambiente familiar diseñado para que disfrutes con amigos, familia o compañeros de trabajo. Nuestro menú está pensado para satisfacer todos los gustos, desde los clásicos irresistibles hasta las opciones más atrevidas.
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              Las <strong>alitas de pollo</strong> son nuestro producto estrella. Las preparamos al momento con pollo fresco, marinado con nuestra receta secreta y frito hasta quedar perfectamente crujientes por fuera y jugosas por dentro. Ofrecemos <strong>13 sabores diferentes</strong> para que siempre encuentres tu favorito: BBQ clásico, Buffalo picante, Mango Habanero con su toque dulce y picante, Limón refrescante, Chipotle ahumado, Teriyaki oriental, Parmesano con queso rallado, Ajo con mantequilla, Ranch cremoso, Cajún con especias, Sriracha asiático, Picante para los valientes y Miel para quienes prefieren algo suave. Puedes pedir media orden de 5 piezas o una orden completa de 10 piezas.
+              Las <strong>alitas de pollo</strong> son nuestro producto estrella. Las preparamos al momento con pollo fresco, marinado con nuestra receta secreta y frito hasta quedar perfectamente crujientes por fuera y jugosas por dentro. Ofrecemos <strong>12 sabores diferentes</strong> para que siempre encuentres tu favorito: BBQ, BBQ Ahumada, BBQ Diabla, Mango Habanero, Buffalo, Bufalo Ranch, Cajun, Habanero, Chipotle, Tamarindo Hot, Lemon & Pepper y Maracuyá Habanero. Puedes pedir media orden de 5 piezas o una orden completa de 10 piezas.
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              Nuestros <strong>boneless</strong> son trozos de pechuga de pollo sin hueso, empanizados y fritos hasta obtener una textura crujiente que contrasta con la suavidad de la carne en su interior. Disponibles en los mismos 13 sabores que las alitas, son la opción ideal para quienes prefieren disfrutar sin hueso y compartir fácilmente en mesa. Los boneless son perfectos para acompañar con cerveza y conversación entre amigos.
+              Nuestros <strong>boneless</strong> son trozos de pechuga de pollo sin hueso, empanizados y fritos hasta obtener una textura crujiente que contrasta con la suavidad de la carne en su interior. Disponibles en los mismos 12 sabores que las alitas, son la opción ideal para quienes prefieren disfrutar sin hueso y compartir fácilmente en mesa. Los boneless son perfectos para acompañar con cerveza y conversación entre amigos.
             </p>
             <p className="text-sm text-gray-700 leading-relaxed mb-3">
               El apartado de <strong>hamburguesas artesanales</strong> es otro de los favoritos de nuestros clientes. Utilizamos carne de res de primera calidad, molida diariamente para garantizar frescura. Nuestros panes son artesanales, recién horneados, y los toppings incluyen ingredientes frescos como lechuga, tomate, cebolla, queso cheddar, tocino crujiente y nuestras salsas caseras. Cada hamburguesa se prepara al momento para que llegue a tu mesa jugosa y caliente.
@@ -1520,6 +1578,13 @@ export default function MenuPage() {
 
       {/* Confetti celebration overlay */}
       <ConfettiOverlay active={confettiActive} />
+
+      {/* Tour virtual del menú */}
+      <MenuTour
+        steps={menuTourSteps}
+        visible={tourVisible}
+        onFinish={() => setTourVisible(false)}
+      />
 
 
     </div>

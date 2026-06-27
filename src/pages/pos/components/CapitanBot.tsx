@@ -8,7 +8,7 @@ import { supabasePos } from "@/pages/pos/supabasePos";
 import { addDebugLog } from "@/hooks/useDebugLogs";
 import type { PosAccount, PosAccountItem } from '../types';
 import {
-  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu,
+  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu, caguamasMenu,
   ampolletasMenu, nonAlcoholicBeersMenu, micheladaMenu, micheladaConCamaronMenu,
   sidesMenu, hotDogsMenu, burgersMenu, comboMenu, sodasMenu, cannedAlcoholicMenu,
   shotShowsMenu, vasosPreparadosMenu, azulitosMenu, preparadosMenu, barrilMenu, cigarettesMenu,
@@ -96,6 +96,7 @@ function buildMenuCatalog(): MenuProduct[] {
   add(beerMenu as unknown as Record<string, unknown>[], 'Cervezas Mega');
   add(halfBeersMenu as unknown as Record<string, unknown>[], 'Medios');
   add(pacificoBeersMenu as unknown as Record<string, unknown>[], 'Pacífico');
+  add(caguamasMenu as unknown as Record<string, unknown>[], 'Caguamas');
   add(ampolletasMenu as unknown as Record<string, unknown>[], 'Ampolletas');
   add(nonAlcoholicBeersMenu as unknown as Record<string, unknown>[], 'Sin Alcohol');
   add([micheladaMenu, micheladaConCamaronMenu] as unknown as Record<string, unknown>[], 'Micheladas');
@@ -105,10 +106,19 @@ function buildMenuCatalog(): MenuProduct[] {
   add(comboMenu as unknown as Record<string, unknown>[], 'Combos');
   add(sodasMenu as unknown as Record<string, unknown>[], 'Refrescos');
   add(cannedAlcoholicMenu as unknown as Record<string, unknown>[], 'Latas Alcohólicas');
-  add(shotShowsMenu as unknown as Record<string, unknown>[], 'Shots');
+  // Expandir shots: Simple + Doble
+  (shotShowsMenu as unknown as { id: number; name: string; price: number }[]).forEach(s => {
+    list.push({ id: `shot-${s.id}-sencillo`, name: `${s.name} (Sencillo)`, category: 'Shots', price: s.price });
+    list.push({ id: `shot-${s.id}-doble`, name: `${s.name} (Doble)`, category: 'Shots', price: s.price * 2 });
+  });
   add(vasosPreparadosMenu as unknown as Record<string, unknown>[], 'Vasos Preparados');
   add(azulitosMenu as unknown as Record<string, unknown>[], 'Azulitos');
-  add(preparadosMenu as unknown as Record<string, unknown>[], 'Preparados');
+  // Expandir preparados: Simple + Doble + Litro
+  (preparadosMenu as unknown as { id: number; name: string; basePrice: number }[]).forEach(p => {
+    list.push({ id: `prep-${p.id}-sencillo`, name: `${p.name} (Sencillo)`, category: 'Preparados', price: p.basePrice });
+    list.push({ id: `prep-${p.id}-doble`, name: `${p.name} (Doble)`, category: 'Preparados', price: p.basePrice * 2 });
+    list.push({ id: `prep-${p.id}-litro`, name: `${p.name} (Litro)`, category: 'Preparados', price: p.basePrice * 3 });
+  });
   add(barrilMenu as unknown as Record<string, unknown>[], 'Barril');
   add(cigarettesMenu as unknown as Record<string, unknown>[], 'Cigarros');
   return list;
@@ -1306,7 +1316,7 @@ function saveCustomUrlHistory(entries: CustomYouTubeEntry[]): void {
   try {
     const trimmed = entries.slice(-20); // max 20 entradas
     localStorage.setItem(CUSTOM_URL_HISTORY_KEY, JSON.stringify(trimmed));
-  } catch { /* ignore */ }
+  } catch (e) { console.warn('[CapitanBot] saveCustomUrlHistory failed:', e); }
 }
 
 function loadMatchHistory(): MatchRecord[] {
@@ -1325,7 +1335,7 @@ function saveMatchHistory(records: MatchRecord[]): void {
     // Keep last 50 records max
     const trimmed = records.slice(-50);
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(trimmed));
-  } catch { /* ignore */ }
+  } catch (e) { console.warn('[CapitanBot] saveMatchHistory failed:', e); }
 }
 
 // ── Tipos de modo Fútbol ───────────────────────────────────────────────────
@@ -3157,8 +3167,8 @@ export default function CapitanBot({ accounts, onGoToAccount, onCloseAccount, on
         addProactiveMessage(msgText);
         playBeepSound(660, 0.08, 0.25, 0);
         playBeepSound(880, 0.08, 0.25, 0.14);
-      } catch {
-        // Silently ignore — fixtures check is best-effort
+      } catch (err) {
+        console.warn('[CapitanBot] chivas-fixtures invoke failed (best-effort):', err);
       }
     };
 
@@ -3571,7 +3581,7 @@ export default function CapitanBot({ accounts, onGoToAccount, onCloseAccount, on
             setTyping(false); return;
           }
           setMusicEnabled(turnOn);
-          try { localStorage.setItem('lc_music_enabled', String(turnOn)); } catch { /**/ }
+          try { localStorage.setItem('lc_music_enabled', String(turnOn)); } catch (e) { console.warn('[CapitanBot] localStorage music toggle failed:', e); }
           if (!turnOn) setCurrentPlaylist(null);
           const confText = turnOn ? 'Música encendida. Elige una playlist en el tab Música.' : 'Música apagada.';
           setMessages(prev => [...prev, { id: (Date.now()+1).toString(), from: 'capitan', text: confText, timestamp: new Date(), goToMusicTab: true }]);
@@ -3589,7 +3599,7 @@ export default function CapitanBot({ accounts, onGoToAccount, onCloseAccount, on
             setTyping(false); return;
           }
           setTvsEnabled(turnOn);
-          try { localStorage.setItem('lc_tvs_enabled', String(turnOn)); } catch { /**/ }
+          try { localStorage.setItem('lc_tvs_enabled', String(turnOn)); } catch (e) { console.warn('[CapitanBot] localStorage TVs toggle failed:', e); }
           const confText = turnOn ? 'TVs encendidas.' : 'TVs apagadas.';
           setMessages(prev => [...prev, { id: (Date.now()+1).toString(), from: 'capitan', text: confText, timestamp: new Date(), goToMusicTab: true }]);
           setTyping(false);
@@ -3676,7 +3686,7 @@ export default function CapitanBot({ accounts, onGoToAccount, onCloseAccount, on
   const toggleMusic = useCallback(() => {
     setMusicEnabled(prev => {
       const next = !prev;
-      try { localStorage.setItem('lc_music_enabled', String(next)); } catch { /**/ }
+      try { localStorage.setItem('lc_music_enabled', String(next)); } catch (e) { console.warn('[CapitanBot] localStorage music toggle failed:', e); }
       if (!next) { setCurrentPlaylist(null); window.speechSynthesis?.cancel(); }
       addProactiveMessage(next ? 'Música encendida.' : 'Música apagada.');
       playBeepSound(next ? 880 : 440, 0.15, 0.3, 0);
@@ -3687,7 +3697,7 @@ export default function CapitanBot({ accounts, onGoToAccount, onCloseAccount, on
   const toggleTvs = useCallback(() => {
     setTvsEnabled(prev => {
       const next = !prev;
-      try { localStorage.setItem('lc_tvs_enabled', String(next)); } catch { /**/ }
+      try { localStorage.setItem('lc_tvs_enabled', String(next)); } catch (e) { console.warn('[CapitanBot] localStorage TVs toggle failed:', e); }
       addProactiveMessage(next ? 'TVs encendidas.' : 'TVs apagadas.');
       playBeepSound(next ? 660 : 330, 0.12, 0.3, 0);
       return next;

@@ -559,18 +559,18 @@ export default function CloseAccountModal({ account, closedBy, onClose, onConfir
           <div className="bg-gray-900 rounded-xl px-4 py-4 space-y-2">
             <div className="flex justify-between text-sm text-gray-400">
               <span>Subtotal</span>
-              <span className="text-white">${subtotal.toFixed(2)}</span>
+              <span className="text-white">MXN$${subtotal.toFixed(2)}</span>
             </div>
             {cardFee > 0 && (
               <div className="flex justify-between text-sm text-rose-400">
                 <span>Cargo terminal (3%)</span>
-                <span>+${cardFee.toFixed(2)}</span>
+                <span>+MXN$${cardFee.toFixed(2)}</span>
               </div>
             )}
             {tip > 0 && (
               <div className="flex justify-between text-sm text-emerald-400">
                 <span>Propina</span>
-                <span>+${tip.toFixed(2)}</span>
+                <span>+MXN$${tip.toFixed(2)}</span>
               </div>
             )}
             {isMixed && mixedPayments.length > 0 && (
@@ -595,12 +595,12 @@ export default function CloseAccountModal({ account, closedBy, onClose, onConfir
             )}
             <div className="border-t border-gray-700 pt-2 flex justify-between items-center">
               <span className="text-gray-300 text-sm font-semibold uppercase tracking-wide">Total</span>
-              <span className="text-amber-400 text-2xl font-black">${total.toFixed(2)}</span>
+              <span className="text-amber-400 text-2xl font-black">MXN$${total.toFixed(2)}</span>
             </div>
             {splitCount > 1 && (
               <div className="flex justify-between text-sm font-semibold text-green-400 bg-gray-800 rounded-lg px-3 py-2">
                 <span>Por persona ({splitCount})</span>
-                <span>${perPerson.toFixed(2)}</span>
+                <span>MXN$${perPerson.toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -644,6 +644,7 @@ export default function CloseAccountModal({ account, closedBy, onClose, onConfir
           total={total}
           cardFee={cardFee}
           tip={tip}
+          customerPhone={account.customer_phone || undefined}
           mode="cuenta"
           onClose={() => setShowPrint(false)}
         />

@@ -26,17 +26,17 @@ export default function CashBreakdown({ dateRange }: CashBreakdownProps) {
           {/* Total general */}
           <div className="bg-gray-900 rounded-2xl p-6">
             <p className="text-gray-400 text-sm mb-1">Total recaudado {rangeLabel}</p>
-            <p className="text-4xl font-black text-amber-400">${stats.totalRevenue.toFixed(2)}</p>
+            <p className="text-4xl font-black text-amber-400">MXN${stats.totalRevenue.toFixed(2)}</p>
             <div className="flex items-center gap-4 mt-3 flex-wrap">
               <span className="text-xs text-gray-400">
                 <i className="ri-receipt-line mr-1" />{stats.closedCount} cuentas cerradas
               </span>
               <span className="text-xs text-gray-400">
-                <i className="ri-user-line mr-1" />Ticket prom. ${stats.avgTicket.toFixed(2)}
+                <i className="ri-user-line mr-1" />Ticket prom. MXN${stats.avgTicket.toFixed(2)}
               </span>
               {totalCardFee > 0 && (
                 <span className="text-xs text-amber-500">
-                  <i className="ri-bank-card-line mr-1" />Cargos terminal: ${totalCardFee.toFixed(2)}
+                  <i className="ri-bank-card-line mr-1" />Cargos terminal: MXN${totalCardFee.toFixed(2)}
                 </span>
               )}
             </div>
@@ -68,7 +68,7 @@ export default function CashBreakdown({ dateRange }: CashBreakdownProps) {
                           {pay.count} venta{pay.count !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <p className="text-2xl font-black text-gray-900 mb-2">${pay.total.toFixed(2)}</p>
+                      <p className="text-2xl font-black text-gray-900 mb-2">MXN${pay.total.toFixed(2)}</p>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${pct}%` }} />
                       </div>
@@ -98,7 +98,7 @@ export default function CashBreakdown({ dateRange }: CashBreakdownProps) {
                         <div className="flex items-center gap-6">
                           <span className="text-xs text-gray-400">{pay.count} cobros</span>
                           <span className="text-xs text-gray-500">{pct.toFixed(1)}%</span>
-                          <span className="text-sm font-black text-gray-900">${pay.total.toFixed(2)}</span>
+                          <span className="text-sm font-black text-gray-900">MXN${pay.total.toFixed(2)}</span>
                         </div>
                       </div>
                     );
@@ -106,7 +106,7 @@ export default function CashBreakdown({ dateRange }: CashBreakdownProps) {
                 </div>
                 <div className="flex items-center justify-between px-5 py-3.5 bg-gray-900 border-t border-gray-200">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">TOTAL</span>
-                  <span className="text-base font-black text-amber-400">${stats.totalRevenue.toFixed(2)}</span>
+                  <span className="text-base font-black text-amber-400">MXN${stats.totalRevenue.toFixed(2)}</span>
                 </div>
               </div>
             </>

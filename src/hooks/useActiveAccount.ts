@@ -30,8 +30,8 @@ function loadActiveAccount(): ActiveAccount | null {
 function saveActiveAccount(account: ActiveAccount) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(account));
-  } catch {
-    // ignore storage errors
+  } catch (e) {
+    console.warn('[useActiveAccount] saveActiveAccount failed:', e);
   }
 }
 

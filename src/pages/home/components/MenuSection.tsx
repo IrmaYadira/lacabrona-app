@@ -79,7 +79,7 @@ export default function MenuSection() {
               LAS ALITAS
             </h2>
             <p className="text-gray-500 mt-3 max-w-xl mx-auto text-sm md:text-base">
-              Crujientes, jugosas y bañadas en la salsa de tu elección. Elige entre 13 sabores irresistibles.
+              Crujientes, jugosas y bañadas en la salsa de tu elección. Elige entre 12 sabores irresistibles.
             </p>
           </div>
         </ScrollReveal>
@@ -217,7 +217,7 @@ export default function MenuSection() {
               <img
                 src={wingsMenu.image}
                 alt="Alitas"
-                title="Alitas de pollo La Cabrona — 13 salsas"
+                title="Alitas de pollo La Cabrona — 12 salsas"
                 loading="lazy"
                 decoding="async"
                 fetchpriority="low"

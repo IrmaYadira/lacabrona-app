@@ -144,7 +144,7 @@ export default function SpotCard({ spot, account, onClick }: SpotCardProps) {
                 ? 'Sin pedir desde ' + lastRound.label
                 : 'Total acumulado'}
             </span>
-            <span className="text-base font-black text-white">${total.toFixed(2)}</span>
+            <span className="text-base font-black text-white">MXN$${total.toFixed(2)}</span>
           </div>
         </>
       ) : (

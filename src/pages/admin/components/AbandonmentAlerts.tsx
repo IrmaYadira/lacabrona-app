@@ -75,8 +75,8 @@ function playAlertSound() {
       osc.start(ctx.currentTime + i * 0.3);
       osc.stop(ctx.currentTime + i * 0.3 + 0.4);
     });
-  } catch {
-    // Audio no disponible
+  } catch (e) {
+    console.warn('[AbandonmentAlerts] playAlertSound failed:', e);
   }
 }
 

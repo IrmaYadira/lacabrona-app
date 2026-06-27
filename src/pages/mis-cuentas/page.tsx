@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabasePos } from '@/pages/pos/supabasePos';
-import { usePageSEO } from '@/hooks/usePageSEO';
-import { SITE_URL } from '@/lib/site-url';
 import {
   getAccountHistory,
   clearAccountHistory,
+  removeAccountFromHistory,
   updateAccountInHistory,
   type AccountHistoryEntry,
 } from '@/hooks/useAccountHistory';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const LOGO_URL =
   'https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285';
@@ -20,6 +20,8 @@ interface LiveAccount {
   itemCount: number;
   pendingItems: number;
 }
+
+type RealtimeStatus = 'connecting' | 'connected' | 'disconnected';
 
 const faqs = [
   {
@@ -59,10 +61,94 @@ function formatRelativeTime(iso: string): string {
   return 'justo ahora';
 }
 
-// Memoized card para evitar re-renders innecesarios
-const AccountCard = memo(({ entry, liveData }: { entry: AccountHistoryEntry; liveData: Record<number, LiveAccount> }) => {
+// ── Push notification toggle por cuenta ──
+function PushToggle({ accountId, accountSpot }: { accountId: number; accountSpot: string }) {
+  const [localError, setLocalError] = useState(false);
+
+  // Si ya falló localmente, mostrar un mini estado de error y no llamar al hook
+  if (localError) {
+    return (
+      <span className="inline-flex items-center gap-1 text-gray-600 text-[10px] bg-gray-800 px-2 py-1 rounded-full">
+        <i className="ri-error-warning-line text-xs" />
+        No disponible
+      </span>
+    );
+  }
+
+  try {
+    return <PushToggleInner accountId={accountId} accountSpot={accountSpot} onError={() => setLocalError(true)} />;
+  } catch {
+    return null;
+  }
+}
+
+function PushToggleInner({ accountId, accountSpot, onError }: { accountId: number; accountSpot: string; onError: () => void }) {
+  const push = usePushNotifications(accountId);
+
+  // Si el hook detecta que no es compatible, devolver null inmediatamente
+  if (!push.supported) return null;
+  if (push.isPreviewEnv) return null;
+
+  if (push.subscribed) {
+    return (
+      <span className="inline-flex items-center gap-1 text-green-400 text-[10px] font-bold bg-green-500/10 px-2 py-1 rounded-full animate-in fade-in">
+        <i className="ri-notification-3-fill text-xs" />
+        Notificaciones ON
+      </span>
+    );
+  }
+
+  if (push.loading) {
+    return (
+      <span className="inline-flex items-center gap-1 text-gray-500 text-[10px] bg-gray-800 px-2 py-1 rounded-full">
+        <i className="ri-loader-2-line animate-spin text-xs" />
+        Activando...
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); push.subscribe().catch(() => onError()); }}
+      className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold bg-amber-500/10 px-2 py-1 rounded-full hover:bg-amber-500/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+    >
+      <i className="ri-notification-line text-xs" />
+      Notificarme cambios
+    </button>
+  );
+}
+
+// ── Realtime status indicator ──
+function RealtimeDot({ status }: { status: RealtimeStatus }) {
+  const label = status === 'connected' ? 'En vivo' : status === 'connecting' ? 'Conectando...' : 'Sin conexión en vivo';
+  const color = status === 'connected' ? 'bg-green-400' : status === 'connecting' ? 'bg-amber-400 animate-pulse' : 'bg-red-400';
+
+  return (
+    <div className="flex items-center gap-1.5" title={label}>
+      <span className={`w-2 h-2 rounded-full ${color}`} />
+      <span className={`text-[10px] font-bold uppercase tracking-wider ${
+        status === 'connected' ? 'text-green-400' : status === 'connecting' ? 'text-amber-400' : 'text-red-400'
+      }`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ── AccountCard ──
+const AccountCard = memo(({
+  entry,
+  liveData,
+  showPushToggle,
+  onRemove,
+}: {
+  entry: AccountHistoryEntry;
+  liveData?: Record<number, LiveAccount>;
+  showPushToggle?: boolean;
+  onRemove?: (id: number) => void;
+}) => {
   const navigate = useNavigate();
-  const live = liveData[entry.id];
+  const live = liveData?.[entry.id];
   const status = live?.status ?? entry.lastStatus;
   const total = live?.total ?? entry.lastTotal;
   const isOpen = status === 'open';
@@ -71,8 +157,23 @@ const AccountCard = memo(({ entry, liveData }: { entry: AccountHistoryEntry; liv
   return (
     <button
       onClick={() => navigate(entry.url)}
-      className="w-full text-left bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden active:scale-[0.98] transition-transform cursor-pointer"
+      className="w-full text-left bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden active:scale-[0.98] transition-transform cursor-pointer relative group/card"
     >
+      {/* Botón eliminar — solo visible en hover */}
+      {onRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onRemove(entry.id);
+          }}
+          className="absolute top-2 right-2 w-7 h-7 bg-gray-800 hover:bg-red-500/40 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover/card:opacity-100 transition-all z-10"
+          title="Quitar del historial"
+          aria-label="Quitar del historial"
+        >
+          <i className="ri-close-line text-gray-500 hover:text-red-400 text-sm" />
+        </button>
+      )}
       {/* Status bar */}
       <div className={`h-1 w-full ${isOpen ? 'bg-green-500' : 'bg-gray-600'}`} />
 
@@ -104,6 +205,13 @@ const AccountCard = memo(({ entry, liveData }: { entry: AccountHistoryEntry; liv
                 <i className="ri-user-line text-xs" />
                 {entry.customer_name}
               </p>
+            )}
+
+            {/* Push toggle — solo en cuentas abiertas */}
+            {isOpen && showPushToggle && (
+              <div className="mt-2">
+                <PushToggle accountId={entry.id} accountSpot={entry.spot} />
+              </div>
             )}
           </div>
 
@@ -139,112 +247,81 @@ const AccountCard = memo(({ entry, liveData }: { entry: AccountHistoryEntry; liv
 
 AccountCard.displayName = 'AccountCard';
 
+// ── PAGE ──
 export default function MisCuentasPage() {
   const navigate = useNavigate();
   const [history, setHistory] = useState<AccountHistoryEntry[]>([]);
-  const [liveData, setLiveData] = useState<Record<number, LiveAccount>>();
+  const [liveData, setLiveData] = useState<Record<number, LiveAccount>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('disconnected');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showFaq, setShowFaq] = useState(false);
+  const historyRef = useRef<AccountHistoryEntry[]>([]);
 
-  usePageSEO({
-    title: 'Mis Cuentas | La Cabrona',
-    description: 'Revisa tu historial de cuentas y consumo en La Cabrona Alitas & Beer de Zapopan.',
-    canonicalUrl: `${SITE_URL}/mis-cuentas`,
-    ogImage: LOGO_URL,
-    keywords: 'historial de cuentas, La Cabrona, alitas, cerveza, Zapopan, consumo, pedidos',
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Mis Cuentas", "item": `${SITE_URL}/mis-cuentas` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": `${SITE_URL}/mis-cuentas`,
-        "url": `${SITE_URL}/mis-cuentas`,
-        "name": "Mis Cuentas | La Cabrona Alitas & Beer Zapopan",
-        "description": "Historial de cuentas de consumo en La Cabrona Alitas & Beer Zapopan. Consulta tus cuentas abiertas y anteriores con totales en tiempo real.",
-        "isPartOf": { "@id": `${SITE_URL}/#website` }
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "¿Qué son las cuentas guardadas en La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Las cuentas guardadas son un historial de tus pedidos que se almacenan automáticamente en el navegador de tu celular cada vez que haces un pedido en La Cabrona. Este sistema te permite revisar el estado de tus cuentas, ver el total acumulado y los productos que ordenaste."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Se actualizan las cuentas en tiempo real?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sí, las cuentas abiertas se actualizan automáticamente en tiempo real. Cuando el mesero agrega nuevos productos a tu cuenta o marca algunos como entregados, verás los cambios instantáneamente en tu celular sin necesidad de recargar la página."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cuántas cuentas se pueden guardar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "El sistema guarda un máximo de 10 cuentas por dispositivo. Cuando llegas al límite, las cuentas más antiguas se eliminan automáticamente para dar espacio a las nuevas."
-            }
-          }
-        ]
-      }
-    ],
-  });
+  // Mantener ref sincronizada para que el callback del canal siempre tenga datos frescos
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
 
   const loadHistory = useCallback(() => {
     const h = getAccountHistory();
     setHistory(h);
+    historyRef.current = h;
     return h;
   }, []);
 
   const fetchLiveData = useCallback(async (entries: AccountHistoryEntry[]) => {
-    if (entries.length === 0) { setLoading(false); return; }
+    if (entries.length === 0) { setLoading(false); setError(null); return; }
 
-    const ids = entries.map(e => e.id);
-    const { data } = await supabasePos
-      .from('pos_accounts')
-      .select('id, status, pos_account_items(unit_price, quantity, delivered)')
-      .in('id', ids);
+    const ids = entries.map(e => e.id).filter(id => id != null && !Number.isNaN(id));
+    if (ids.length === 0) { setLoading(false); setError(null); return; }
 
-    if (data) {
-      const map: Record<number, LiveAccount> = {};
-      data.forEach((acc: {
-        id: number;
-        status: 'open' | 'closed';
-        pos_account_items: { unit_price: number; quantity: number; delivered: boolean }[];
-      }) => {
-        const items = acc.pos_account_items ?? [];
-        const total = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
-        const pending = items.filter(i => !i.delivered).length;
-        map[acc.id] = {
-          id: acc.id,
-          status: acc.status,
-          total,
-          itemCount: items.length,
-          pendingItems: pending,
-        };
-        updateAccountInHistory(acc.id, {
-          lastTotal: total,
-          lastStatus: acc.status,
-          lastSeen: new Date().toISOString(),
+    try {
+      const { data, error: queryError } = await supabasePos
+        .from('pos_accounts')
+        .select('id, status, pos_account_items(unit_price, quantity, delivered)')
+        .in('id', ids);
+
+      if (queryError) {
+        console.error('Error fetching live accounts:', queryError);
+        setError('No pudimos actualizar tus cuentas en este momento. Intenta de nuevo.');
+        setLoading(false);
+        return;
+      }
+
+      if (data && Array.isArray(data)) {
+        const map: Record<number, LiveAccount> = {};
+        data.forEach((acc: {
+          id: number;
+          status: 'open' | 'closed';
+          pos_account_items: { unit_price: number; quantity: number; delivered: boolean }[];
+        }) => {
+          const items = acc.pos_account_items ?? [];
+          const total = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+          const pending = items.filter(i => !i.delivered).length;
+          map[acc.id] = {
+            id: acc.id,
+            status: acc.status,
+            total,
+            itemCount: items.length,
+            pendingItems: pending,
+          };
+          updateAccountInHistory(acc.id, {
+            lastTotal: total,
+            lastStatus: acc.status,
+            lastSeen: new Date().toISOString(),
+          });
         });
-      });
-      setLiveData(map);
+        setLiveData(map);
+        setError(null);
+      }
+    } catch (err) {
+      console.error('fetchLiveData crashed:', err);
+      setError('Ocurrió un error al cargar tus cuentas. Intenta recargar la página.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -252,29 +329,77 @@ export default function MisCuentasPage() {
     fetchLiveData(h);
   }, [loadHistory, fetchLiveData]);
 
-  // Suscripción en tiempo real para las cuentas abiertas
+  // ── Suscripción en tiempo real robusta ──
   useEffect(() => {
     const openIds = history.filter(e => e.lastStatus === 'open').map(e => e.id);
-    if (openIds.length === 0) return;
+    if (openIds.length === 0) {
+      setRealtimeStatus('disconnected');
+      return;
+    }
+
+    setRealtimeStatus('connecting');
 
     const channel = supabasePos
-      .channel('mis-cuentas-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos_account_items' }, () => {
-        fetchLiveData(history);
+      .channel('mis-cuentas-live', {
+        config: { broadcast: { self: true } },
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pos_accounts' }, () => {
-        fetchLiveData(history);
-      })
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pos_account_items' },
+        () => {
+          // Usar ref para acceder a history fresco
+          const current = historyRef.current;
+          fetchLiveData(current.length > 0 ? current : history);
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'pos_accounts' },
+        () => {
+          const current = historyRef.current;
+          fetchLiveData(current.length > 0 ? current : history);
+        },
+      )
+      .subscribe((status) => {
+        switch (status) {
+          case 'SUBSCRIBED':
+            setRealtimeStatus('connected');
+            break;
+          case 'CHANNEL_ERROR':
+          case 'TIMED_OUT':
+          case 'CLOSED':
+            setRealtimeStatus('disconnected');
+            break;
+          default:
+            break;
+        }
+      });
 
-    return () => { supabasePos.removeChannel(channel); };
-  }, [history, fetchLiveData]);
+    return () => {
+      supabasePos.removeChannel(channel).catch(() => {});
+    };
+  }, [history.length, fetchLiveData]);
+  // Nota: dependemos de history.length en vez de history entero para evitar
+  // recrear el canal en cada cambio menor. Pero si cambian los IDs de cuentas
+  // abiertas, se recrea porque history.filter(...) cambia.
 
   const handleClear = useCallback(() => {
     clearAccountHistory();
     setHistory([]);
     setLiveData({});
+    setError(null);
     setShowClearConfirm(false);
+    setTimeout(() => loadHistory(), 100);
+  }, [loadHistory]);
+
+  const handleRemoveEntry = useCallback((id: number) => {
+    removeAccountFromHistory(id);
+    setHistory(prev => prev.filter(e => e.id !== id));
+    setLiveData(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }, []);
 
   const openAccounts = history.filter(e => (liveData[e.id]?.status ?? e.lastStatus) === 'open');
@@ -311,100 +436,49 @@ export default function MisCuentasPage() {
             </button>
           )}
         </div>
+
+        {/* Realtime status indicator */}
+        <div className="mt-2 flex items-center gap-3">
+          <RealtimeDot status={realtimeStatus} />
+          <span className="text-[10px] text-gray-600">
+            {openAccounts.length > 0
+              ? `${openAccounts.length} cuenta${openAccounts.length > 1 ? 's' : ''} con seguimiento en vivo`
+              : 'Sin cuentas abiertas para seguir'}
+          </span>
+        </div>
       </div>
 
       {/* Contenido */}
       <div className="px-4 pt-5 space-y-6">
 
-        {/* Descripción introductoria para SEO — EXPANDIDA */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-5 mb-6">
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            Aquí encuentras tu historial de cuentas de consumo en <strong className="text-white">La Cabrona Alitas &amp; Beer</strong>. El sistema guarda cada cuenta automáticamente en tu celular. Puedes revisar el estado de tus pedidos, el total acumulado y los productos pendientes. Todo se actualiza en tiempo real.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            ¿Cómo funciona? Cuando haces un pedido en el bar, el mesero registra tu cuenta en nuestro sistema POS. Tu celular guarda automáticamente un enlace a esa cuenta. Puedes ver cuántos productos has ordenado, cuántos están en camino y cuánto llevas gastado. Si tu cuenta sigue abierta, verás una barra verde parpadeante. Si ya se cerró, aparece en la sección de cuentas anteriores. El historial se guarda solo en este dispositivo, con un máximo de 10 cuentas. Si cambias de celular, puedes buscar tu cuenta activa usando tu nombre o número de mesa.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Esta herramienta está diseñada para que tengas control total sobre tu experiencia de consumo. No necesitas memorizar qué pediste ni andar preguntando al mesero por el total. Todo está en tu celular, actualizado al segundo, accesible con un solo toque.
-          </p>
-        </section>
+        {/* Error state */}
+        {error && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            <div className="w-16 h-16 bg-red-500/15 rounded-2xl flex items-center justify-center mb-4">
+              <i className="ri-error-warning-line text-red-400 text-3xl" />
+            </div>
+            <p className="text-white text-base font-bold mb-2">Error al cargar</p>
+            <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-xs">{error}</p>
+            <button
+              onClick={() => { setError(null); setLoading(true); const h = loadHistory(); fetchLiveData(h); }}
+              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-2xl text-sm font-bold cursor-pointer transition-colors active:scale-95 whitespace-nowrap"
+            >
+              <i className="ri-refresh-line" />
+              Reintentar
+            </button>
+          </div>
+        )}
 
-        {/* Sección: El Historial de Cuentas y Cómo Funciona */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-5 mb-6">
-          <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-            <i className="ri-time-line text-amber-400" />
-            El Historial de Cuentas y Cómo Funciona
-          </h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            El historial de cuentas es una funcionalidad exclusiva de <strong className="text-white">La Cabrona Alitas &amp; Beer</strong> que te permite llevar un registro completo de todas tus visitas al bar. Cada vez que haces un pedido y el mesero registra tu cuenta en nuestro sistema POS, tu celular almacena automáticamente un enlace a esa cuenta. No necesitas crear una cuenta de usuario ni iniciar sesión: el sistema funciona de forma anónima y local en tu dispositivo.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            El funcionamiento es sencillo pero potente. Cuando accedes a una cuenta desde el buscador o desde el menú, el navegador guarda el identificador de esa cuenta en el almacenamiento local del dispositivo. Desde ese momento, puedes volver a esa cuenta en cualquier momento sin tener que buscarla nuevamente. El sistema se encarga de consultar la información actualizada en nuestra base de datos cada vez que abres el historial, por lo que siempre ves el estado real de tu cuenta.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Las cuentas se organizan automáticamente en dos categorías: cuentas abiertas y cuentas anteriores. Las abiertas son las que aún están activas en el bar, donde puedes seguir ordenando productos. Las anteriores son las que ya fueron cerradas y pagadas. Esta organización te permite distinguir fácilmente entre visitas actuales y visitas pasadas, manteniendo todo ordenado y accesible.
-          </p>
-        </section>
-
-        {/* Sección: Ventajas de Usar el Historial de Cuentas */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-5 mb-6">
-          <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-            <i className="ri-star-line text-amber-400" />
-            Ventajas de Usar el Historial de Cuentas
-          </h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            Utilizar el historial de cuentas de <strong className="text-white">La Cabrona</strong> trae consigo múltiples beneficios que transforman tu experiencia en el bar. El primero es la <strong className="text-white">comodidad absoluta</strong>: olvídate de andar preguntando al mesero cuánto llevas gastado o si ya llegó tu orden. Con un solo toque en tu celular, tienes toda la información frente a ti, organizada y actualizada.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            Otra ventaja significativa es el <strong className="text-white">control presupuestario</strong>. Al poder ver el total acumulado en tiempo real, puedes decidir si quieres pedir algo más o si prefieres cerrar la cuenta en ese momento. Esto es especialmente útil cuando salen en grupo y cada persona quiere controlar su propio gasto. También puedes ver el desglose de productos y precios, lo que te da total claridad sobre tu consumo.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Finalmente, el historial te permite <strong className="text-white">planificar futuras visitas</strong>. Al revisar tus cuentas anteriores, puedes recordar qué productos te gustaron más, cuánto gastaste en promedio y qué días o horarios funcionan mejor para ti. Es una herramienta de memoria digital que mejora cada visita sucesiva al bar, haciendo que tu experiencia sea más personalizada y satisfactoria.
-          </p>
-        </section>
-
-        {/* Sección: Experiencia Completa en el Bar */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-5 mb-6">
-          <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-            <i className="ri-restaurant-2-line text-amber-400" />
-            Experiencia Completa en La Cabrona
-          </h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            <strong className="text-white">La Cabrona Alitas &amp; Beer</strong> no es solo un bar: es un destino de experiencias. Ubicado en Zapopan, Jalisco, nuestro establecimiento ofrece una combinación única de gastronomía de calidad, bebidas refrescantes y un ambiente diseñado para la diversión. Desde nuestras emblemáticas alitas de pollo en sabores clásicos y especiales hasta nuestra selección de cervezas de barril, latas, micheladas y preparados, cada elemento está pensado para que pases un momento inolvidable.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            El sistema de historial de cuentas es solo una parte de la experiencia digital que ofrecemos. También puedes explorar nuestro menú completo desde tu celular, ver las ofertas flash del día, hacer reservaciones para mesa o eventos especiales, y hasta jugar una partida de billar en nuestras mesas profesionales. Todo está integrado en un ecosistema pensado para que disfrutes al máximo sin complicaciones.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Ya sea que vengas con un grupo grande para celebrar una ocasión especial, con tu pareja para una cena relajada, o solo para disfrutar de una cerveza tranquila después del trabajo, <strong className="text-white">La Cabrona</strong> tiene algo para ti. Y con el historial de cuentas, cada visita queda registrada para que tu próxima experiencia sea aún mejor. Nuestro compromiso es brindarte no solo excelente comida y bebida, sino también una experiencia de servicio moderna, transparente y sin complicaciones.
-          </p>
-        </section>
-
-        {/* Sección: Consejos para Aprovechar tu Historial */}
-        <section className="bg-gray-900 border border-gray-800 rounded-2xl px-5 py-5 mb-6">
-          <h3 className="text-white text-sm font-bold mb-3 flex items-center gap-2">
-            <i className="ri-lightbulb-line text-amber-400" />
-            Consejos para Aprovechar tu Historial
-          </h3>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            Para sacar el máximo provecho a tu historial de cuentas en <strong className="text-white">La Cabrona</strong>, te compartimos algunos consejos prácticos. Primero, revisa el historial antes de ordenar una segunda ronda. Al ver el total acumulado, puedes decidir con mejor información si quieres seguir consumiendo o si ya es momento de cerrar. Esto te ayuda a mantener el control de tu presupuesto durante toda la visita.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed mb-3">
-            Segundo, usa el historial para recordar tus productos favoritos. Si en una visita anterior probaste una michelada especial o unas alitas con un salsa que te encantó, tu historial te ayuda a recordar qué pediste y cuánto costó. Así, en tu próxima visita, puedes pedir directamente lo que sabes que te gusta, sin tener que memorizar el menú completo.
-          </p>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Tercero, mantén tu historial limpio. Si ya tienes muchas cuentas acumuladas y algunas son muy viejas, considera usar el botón de borrar historial para empezar fresco. Esto no afecta tus cuentas abiertas actuales, solo limpia el registro local. Un historial limpio carga más rápido y te permite enfocarte en las cuentas que realmente te interesan. Si necesitas buscar una cuenta antigua, siempre puedes usar el buscador de cuentas con tu nombre o mesa.
-          </p>
-        </section>
-
-        {loading && (
+        {/* Loading state */}
+        {!error && loading && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-gray-500 text-sm">Cargando tus cuentas...</p>
           </div>
         )}
 
-        {!loading && history.length === 0 && (
+        {/* Empty state */}
+        {!error && !loading && history.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 text-center px-4">
             <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mb-5">
               <i className="ri-receipt-line text-4xl text-gray-600" />
@@ -435,7 +509,8 @@ export default function MisCuentasPage() {
           </div>
         )}
 
-        {!loading && openAccounts.length > 0 && (
+        {/* Cuentas abiertas */}
+        {!error && !loading && openAccounts.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -446,16 +521,32 @@ export default function MisCuentasPage() {
                 {openAccounts.length}
               </span>
             </div>
+
+            {/* Banner explicativo de notificaciones push */}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <i className="ri-notification-3-line text-amber-400 text-base" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-xs font-bold mb-0.5">Recibe notificaciones push</p>
+                  <p className="text-gray-500 text-[11px] leading-relaxed">
+                    Activa las notificaciones en cada cuenta abierta para recibir alertas cuando el mesero agregue productos, marque entregas o cierre la cuenta. Funcionan incluso con la pantalla apagada.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3">
               {openAccounts.map(entry => (
-                <AccountCard key={entry.id} entry={entry} liveData={liveData} />
+                <AccountCard key={entry.id} entry={entry} liveData={liveData} showPushToggle onRemove={handleRemoveEntry} />
               ))}
             </div>
           </section>
         )}
 
         {/* Banner: ¿Falta una cuenta? */}
-        {!loading && history.length > 0 && (
+        {!error && !loading && history.length > 0 && (
           <Link
             to="/buscar-cuenta"
             className="flex items-center gap-3 bg-gray-900 border border-gray-800 hover:border-amber-500/40 rounded-2xl px-4 py-3.5 cursor-pointer transition-all active:scale-[0.98]"
@@ -471,7 +562,8 @@ export default function MisCuentasPage() {
           </Link>
         )}
 
-        {!loading && closedAccounts.length > 0 && (
+        {/* Cuentas anteriores */}
+        {!error && !loading && closedAccounts.length > 0 && (
           <section>
             <div className="flex items-center gap-2 mb-3">
               <h2 className="text-gray-500 text-xs font-black uppercase tracking-widest">
@@ -483,13 +575,13 @@ export default function MisCuentasPage() {
             </div>
             <div className="space-y-3">
               {closedAccounts.map(entry => (
-                <AccountCard key={entry.id} entry={entry} liveData={liveData} />
+                <AccountCard key={entry.id} entry={entry} liveData={liveData} onRemove={handleRemoveEntry} />
               ))}
             </div>
           </section>
         )}
 
-        {!loading && history.length > 0 && (
+        {!error && !loading && history.length > 0 && (
           <p className="text-center text-gray-700 text-xs pt-2">
             Solo se guarda en este celular · máx. 10 cuentas
           </p>

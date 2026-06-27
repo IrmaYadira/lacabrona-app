@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabasePos } from '@/pages/pos/supabasePos';
-import { usePageSEO } from '@/hooks/usePageSEO';
-import { SITE_URL } from '@/lib/site-url';
+import { getAccountHistory } from '@/hooks/useAccountHistory';
 
 const LOGO_URL =
   'https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285';
@@ -15,6 +14,11 @@ interface FoundAccount {
   customer_name?: string;
   total: number;
   itemCount: number;
+}
+
+export function isAccountInHistory(accountId: number): boolean {
+  const history = getAccountHistory();
+  return history.some(e => e.id === accountId);
 }
 
 const faqs = [
@@ -36,7 +40,7 @@ const faqs = [
   },
   {
     q: "¿La información de mi cuenta es privada?",
-    a: "Sí, solo tú puedes ver tu cuenta si conoces el nombre o número de mesa. Sin embargo, cualquier persona que conozca tu nombre o mesa podría buscarla. El sistema está diseñado para facilitar el seguimiento de pedidos, no como un sistema de seguridad estricto.",
+    a: "El sistema solo muestra cuentas que están actualmente abiertas en el bar. Una vez que tu cuenta se cierra, ya no aparece en el buscador. Solo puedes acceder a una cuenta cerrada si ya la tenías guardada en el historial de tu dispositivo. Esto protege tu información de consumo de terceros.",
   },
 ];
 
@@ -48,63 +52,6 @@ export default function BuscarCuentaPage() {
   const [results, setResults] = useState<FoundAccount[]>([]);
   const [showFaq, setShowFaq] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  usePageSEO({
-    title: 'Buscar Mi Cuenta | La Cabrona',
-    description: 'Busca tu cuenta activa en La Cabrona Alitas & Beer usando tu nombre, teléfono o número de mesa.',
-    canonicalUrl: `${SITE_URL}/buscar-cuenta`,
-    ogImage: LOGO_URL,
-    keywords: 'buscar cuenta, La Cabrona, alitas, cerveza, Zapopan, cuenta de consumo, POS, mesa',
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Buscar Mi Cuenta", "item": `${SITE_URL}/buscar-cuenta` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": `${SITE_URL}/buscar-cuenta`,
-        "url": `${SITE_URL}/buscar-cuenta`,
-        "name": "Buscar Mi Cuenta | La Cabrona Alitas & Beer Zapopan",
-        "description": "Busca tu cuenta de consumo activa en La Cabrona Alitas & Beer Zapopan usando tu nombre, teléfono o número de mesa. Consulta tu total en tiempo real.",
-        "isPartOf": { "@id": `${SITE_URL}/#website` }
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "¿Cómo buscar mi cuenta en La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Puedes buscar tu cuenta de consumo ingresando tu nombre exactamente como lo registraste al hacer tu pedido, o escribiendo el número de mesa donde estás sentado. El sistema busca en tiempo real entre las cuentas activas del sistema POS del bar."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Por qué no aparece mi cuenta cuando busco?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Si tu cuenta no aparece, verifica que el nombre coincida exactamente con el que usaste al pedir. También puedes intentar con el número de mesa. Si aún no la encuentras, es posible que tu cuenta ya haya sido cerrada por el mesero o que aún no haya sido registrada en el sistema."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Puedo ver mi cuenta desde cualquier celular?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No, el historial de cuentas se guarda localmente en el navegador de cada celular. Si cambias de dispositivo, deberás buscar tu cuenta nuevamente por nombre o número de mesa."
-            }
-          }
-        ]
-      }
-    ],
-  });
 
   const handleSearch = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -125,11 +72,15 @@ export default function BuscarCuentaPage() {
       const phoneFilter = `customer_phone.ilike.%${q}%`;
       const orFilter = [...spotFilters, nameFilter, phoneFilter].join(',');
 
+      // Solo buscar cuentas abiertas y recientes (últimas 24 horas)
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
       const { data } = await supabasePos
         .from('pos_accounts')
         .select('id, spot, area, status, customer_name, pos_account_items(unit_price, quantity)')
+        .eq('status', 'open')
+        .gte('created_at', last24h)
         .or(orFilter)
-        .order('status', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -152,12 +103,6 @@ export default function BuscarCuentaPage() {
           ),
           itemCount: (acc.pos_account_items ?? []).length,
         }));
-
-        found.sort((a, b) => {
-          if (a.status === 'open' && b.status !== 'open') return -1;
-          if (a.status !== 'open' && b.status === 'open') return 1;
-          return 0;
-        });
 
         setResults(found);
       } else {
@@ -333,14 +278,14 @@ export default function BuscarCuentaPage() {
                 color: 'text-amber-400',
                 bg: 'bg-amber-500/10',
                 title: 'Busca por tu nombre',
-                desc: 'La forma más rápida. Escribe tu nombre exactamente como lo pusiste al pedir, por ejemplo "Juan Pérez" o "María". El sistema busca en todas las cuentas abiertas del bar.',
+                desc: 'La forma más rápida. Escribe tu nombre exactamente como lo pusiste al pedir, por ejemplo "Juan Pérez" o "María". El sistema busca solo entre las cuentas abiertas del bar.',
               },
               {
                 icon: 'ri-smartphone-line',
                 color: 'text-purple-400',
                 bg: 'bg-purple-500/10',
                 title: 'Busca por tu teléfono',
-                desc: 'Escribe tu número de celular y encuentra todas tus cuentas, incluso las que ya fueron cerradas y pagadas.',
+                desc: 'Escribe tu número de celular y encuentra tu cuenta actual. Solo aparecerán cuentas que estén activas en este momento.',
               },
               {
                 icon: 'ri-map-pin-2-line',

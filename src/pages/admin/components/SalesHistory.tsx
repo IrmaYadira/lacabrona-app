@@ -191,7 +191,7 @@ function AccountDetail({ acc, onClose }: { acc: AccountWithItems; onClose: () =>
                     <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
                       Ronda #{String(folio).padStart(2, '0')}
                     </span>
-                    <span className="text-sm font-bold text-amber-700">${folioTotal.toFixed(2)}</span>
+                    <span className="text-sm font-bold text-amber-700">MXN${folioTotal.toFixed(2)}</span>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {folioItems.map(item => (
@@ -202,9 +202,9 @@ function AccountDetail({ acc, onClose }: { acc: AccountWithItems; onClose: () =>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
                           <p className="text-sm font-bold text-gray-900">
-                            {item.quantity}x ${item.unit_price.toFixed(2)}
+                            {item.quantity}x MXN${item.unit_price.toFixed(2)}
                           </p>
-                          <p className="text-xs text-gray-400">${(item.unit_price * item.quantity).toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">MXN${(item.unit_price * item.quantity).toFixed(2)}</p>
                         </div>
                       </div>
                     ))}
@@ -218,7 +218,7 @@ function AccountDetail({ acc, onClose }: { acc: AccountWithItems; onClose: () =>
           <div className="bg-gray-900 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm pb-2 border-b border-gray-700">
               <span className="text-gray-400">Subtotal consumos</span>
-              <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+              <span className="text-white font-semibold">MXN${subtotal.toFixed(2)}</span>
             </div>
             {isMixed ? (
               <>
@@ -231,12 +231,12 @@ function AccountDetail({ acc, onClose }: { acc: AccountWithItems; onClose: () =>
                         {PAYMENT_LABELS_LOCAL[p.payment_method] ?? p.payment_method}
                         <span className="text-gray-500 text-xs">#{idx + 1}</span>
                       </span>
-                      <span className="text-white">${Number(p.subtotal).toFixed(2)}</span>
+                      <span className="text-white">MXN${Number(p.subtotal).toFixed(2)}</span>
                     </div>
                     {Number(p.card_fee) > 0 && (
                       <div className="flex justify-between text-xs pl-4">
                         <span className="text-gray-500">Cargo terminal</span>
-                        <span className="text-amber-400">+${Number(p.card_fee).toFixed(2)}</span>
+                        <span className="text-amber-400">+MXN${Number(p.card_fee).toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -248,23 +248,23 @@ function AccountDetail({ acc, onClose }: { acc: AccountWithItems; onClose: () =>
                   <i className={PAYMENT_ICONS_LOCAL[allPayments[0].payment_method] ?? 'ri-money-dollar-circle-line'} />
                   {PAYMENT_LABELS_LOCAL[allPayments[0].payment_method] ?? allPayments[0].payment_method}
                 </span>
-                <span className="text-white">${Number(allPayments[0].subtotal).toFixed(2)}</span>
+                <span className="text-white">MXN${Number(allPayments[0].subtotal).toFixed(2)}</span>
               </div>
             ) : null}
             {totalCardFees > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Total cargos terminal</span>
-                <span className="text-amber-400">+${totalCardFees.toFixed(2)}</span>
+                <span className="text-amber-400">+MXN${totalCardFees.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-black border-t border-gray-700 pt-2">
               <span className="text-gray-300">TOTAL COBRADO</span>
-              <span className="text-amber-400">${totalPagado.toFixed(2)}</span>
+              <span className="text-amber-400">MXN${totalPagado.toFixed(2)}</span>
             </div>
             {!isMixed && allPayments[0]?.split_count > 1 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Por persona ({allPayments[0].split_count})</span>
-                <span className="text-green-400 font-semibold">${(totalPagado / allPayments[0].split_count).toFixed(2)} c/u</span>
+                <span className="text-green-400 font-semibold">MXN${(totalPagado / allPayments[0].split_count).toFixed(2)} c/u</span>
               </div>
             )}
           </div>
@@ -355,7 +355,7 @@ export default function SalesHistory({ dateRange }: SalesHistoryProps) {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-lg font-black text-gray-900">${total.toFixed(2)}</p>
+                      <p className="text-lg font-black text-gray-900">MXN${total.toFixed(2)}</p>
                       {isMixedCard ? (
                         <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
                           Pago Mixto
@@ -407,7 +407,7 @@ export default function SalesHistory({ dateRange }: SalesHistoryProps) {
                       return (
                         <div key={folio} className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 text-xs">
                           <span className="font-bold text-amber-700">Ronda #{String(folio).padStart(2, '0')}</span>
-                          <span className="text-amber-600 ml-1">${folioTotal.toFixed(2)}</span>
+                          <span className="text-amber-600 ml-1">MXN${folioTotal.toFixed(2)}</span>
                           <span className="text-amber-500 ml-1">· {folioItems.reduce((s, i) => s + i.quantity, 0)} items</span>
                         </div>
                       );

@@ -35,8 +35,8 @@ function loadProfiles(): CustomerProfile[] {
 function saveProfiles(profiles: CustomerProfile[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles.slice(0, 10)));
-  } catch {
-    // ignore storage errors
+  } catch (e) {
+    console.warn('[PersistentCustomer] saveProfiles failed:', e);
   }
 }
 

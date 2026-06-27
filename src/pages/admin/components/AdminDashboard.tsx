@@ -24,8 +24,9 @@ import EventosAdminView from './EventosAdminView';
 import SiteSettingsPanel from './SiteSettingsPanel';
 import PushDiagnosticsPanel from './PushDiagnosticsPanel';
 import InventoryManager from './InventoryManager';
+import AdminGuideView from './AdminGuideView';
 
-type Tab = 'overview' | 'history' | 'products' | 'cash' | 'web' | 'sale' | 'mesas' | 'pedidos' | 'cocina' | 'billar' | 'lealtad' | 'ofertas' | 'reservas' | 'eventos' | 'sitio' | 'push' | 'abandoned' | 'inventario';
+type Tab = 'overview' | 'history' | 'products' | 'cash' | 'web' | 'sale' | 'mesas' | 'pedidos' | 'cocina' | 'billar' | 'lealtad' | 'ofertas' | 'reservas' | 'eventos' | 'sitio' | 'push' | 'abandoned' | 'inventario' | 'guia';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -51,6 +52,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const TABS: { id: Tab; label: string; icon: string; highlight?: boolean; badge?: number; badgeColor?: string; groupStart?: boolean }[] = [
     // ── Operaciones (día a día) ──
     { id: 'sale', label: 'Venta Rápida', icon: 'ri-add-circle-fill', highlight: true },
+    { id: 'guia', label: 'Guía Mariana', icon: 'ri-book-open-line', highlight: true },
     { id: 'mesas', label: 'Mesas Abiertas', icon: 'ri-table-line' },
     {
       id: 'pedidos',
@@ -219,10 +221,14 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 tab.groupStart ? 'border-l border-gray-200 ml-2 pl-4' : ''
               } ${
                 activeTab === tab.id
-                  ? 'border-amber-500 text-amber-600'
-                  : tab.highlight
-                    ? 'border-transparent text-amber-500 hover:text-amber-600 font-bold'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? tab.id === 'guia'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-amber-500 text-amber-600'
+                  : tab.id === 'guia'
+                    ? 'border-transparent text-green-600 hover:text-green-700 font-bold'
+                    : tab.highlight
+                      ? 'border-transparent text-amber-500 hover:text-amber-600 font-bold'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <i className={tab.icon} />
@@ -262,6 +268,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {activeTab === 'sitio' && <SiteSettingsPanel />}
         {activeTab === 'push' && <PushDiagnosticsPanel />}
         {activeTab === 'inventario' && <InventoryManager />}
+        {activeTab === 'guia' && <AdminGuideView />}
       </main>
 
       {/* Gerente Bot flotante */}

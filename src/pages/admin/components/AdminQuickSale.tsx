@@ -195,7 +195,7 @@ export default function AdminQuickSale() {
 
     setSendingRound(false);
     setItems([]);
-    setRoundSuccess(`Ronda #${String(folioNumber).padStart(2, '0')} enviada · $${itemTotal.toFixed(2)}`);
+    setRoundSuccess(`Ronda #${String(folioNumber).padStart(2, '0')} enviada · MXN$${itemTotal.toFixed(2)}`);
     await fetchOpenAccounts();
 
     if (fullAcc) {
@@ -336,7 +336,7 @@ export default function AdminQuickSale() {
           delta: pointsEarned,
           points_before: prevPoints,
           points_after: newPoints,
-          reason: `Cierre de cuenta (QuickSale) — ${closingAccount.spot} — Total $${grandTotal.toFixed(2)} · Pago: ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod}`,
+          reason: `Cierre de cuenta (QuickSale) — ${closingAccount.spot} — Total MXN$${grandTotal.toFixed(2)} · Pago: ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod}`,
           adjusted_by: 'pos_auto',
         });
       }
@@ -346,7 +346,7 @@ export default function AdminQuickSale() {
         account_id: closingAccount.id,
         customer_id: resolvedCustId,
         event_type: 'account_closed',
-        description: `Cuenta cerrada (QuickSale) — $${grandTotal.toFixed(2)} · ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod}${pointsEarned > 0 ? ` · +${pointsEarned} pts (total: ${newPoints})` : ''}`,
+        description: `Cuenta cerrada (QuickSale) — MXN$${grandTotal.toFixed(2)} · ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod}${pointsEarned > 0 ? ` · +${pointsEarned} pts (total: ${newPoints})` : ''}`,
         metadata: {
           spot: closingAccount.spot,
           area: closingAccount.area,
@@ -364,7 +364,7 @@ export default function AdminQuickSale() {
       await supabasePos.from('pos_account_events').insert({
         account_id: closingAccount.id,
         event_type: 'account_closed',
-        description: `Cuenta cerrada (QuickSale) — $${grandTotal.toFixed(2)} · ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod} · ⚠️ Sin cliente vinculado (no se sumaron puntos)`,
+        description: `Cuenta cerrada (QuickSale) — MXN$${grandTotal.toFixed(2)} · ${PAYMENT_OPTIONS.find(p => p.id === paymentMethod)?.label ?? paymentMethod} · ⚠️ Sin cliente vinculado (no se sumaron puntos)`,
         metadata: {
           spot: closingAccount.spot,
           area: closingAccount.area,
@@ -384,7 +384,7 @@ export default function AdminQuickSale() {
     const { data: fullAccount } = await supabasePos.from('pos_accounts').select('*, pos_account_items(*)').eq('id', closingAccount.id).maybeSingle();
 
     setClosingLoading(false);
-    setSuccessMsg(`Cuenta cerrada · ${closingAccount.spot} · $${grandTotal.toFixed(2)}`);
+    setSuccessMsg(`Cuenta cerrada · ${closingAccount.spot} · MXN$${grandTotal.toFixed(2)}`);
     setClosingAccount(null);
 
     if (activeSpotId) {
@@ -510,7 +510,7 @@ export default function AdminQuickSale() {
                           <span className={`text-xs mt-0.5 font-semibold ${
                             isActive ? 'text-white/80' : isLlevar ? 'text-teal-700' : 'text-rose-500'
                           }`}>
-                            R{acc.folio_counter} · ${(acc.total ?? 0).toFixed(0)}
+                            R{acc.folio_counter} · MXN${(acc.total ?? 0).toFixed(0)}
                           </span>
                         )}
                         {isOccupied && !isActive && (
@@ -589,7 +589,7 @@ export default function AdminQuickSale() {
                   {activeAccount && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">{activeAccount.folio_counter} ronda{activeAccount.folio_counter !== 1 ? 's' : ''} · ${(activeAccount.total ?? 0).toFixed(2)}</span>
+                        <span className="text-gray-500">{activeAccount.folio_counter} ronda{activeAccount.folio_counter !== 1 ? 's' : ''} · MXN${(activeAccount.total ?? 0).toFixed(2)}</span>
                         {activeAccount.customer_name && <span className="font-medium text-gray-700 truncate ml-2">{activeAccount.customer_name}</span>}
                       </div>
                       <div className="flex gap-1.5">
@@ -637,7 +637,7 @@ export default function AdminQuickSale() {
               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
                   <span className="text-xs font-bold text-gray-700">Esta ronda</span>
-                  <span className="text-xs font-bold text-amber-600">${itemTotal.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-amber-600">MXN${itemTotal.toFixed(2)}</span>
                 </div>
                 <div className="max-h-40 overflow-y-auto">
                   <QuickSaleCart
@@ -662,7 +662,7 @@ export default function AdminQuickSale() {
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Enviando...
                     </span>
                   ) : (
-                    <><i className="ri-send-plane-line mr-2" />Enviar Ronda · ${itemTotal.toFixed(2)}</>
+                    <><i className="ri-send-plane-line mr-2" />Enviar Ronda · MXN${itemTotal.toFixed(2)}</>
                   )}
                 </button>
               )}
@@ -673,7 +673,7 @@ export default function AdminQuickSale() {
                   className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-bold text-sm cursor-pointer transition-colors whitespace-nowrap"
                 >
                   <i className="ri-close-circle-line mr-2" />
-                  Cobrar y Cerrar Cuenta · ${((activeAccount.total ?? 0) + itemTotal).toFixed(2)}
+                  Cobrar y Cerrar Cuenta · MXN${((activeAccount.total ?? 0) + itemTotal).toFixed(2)}
                 </button>
               )}
 
@@ -712,7 +712,7 @@ export default function AdminQuickSale() {
                         <span className="text-xs text-gray-400 truncate">{AREA_LABELS[acc.area as Area]?.split(' ')[0]}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-rose-600 font-bold">${(acc.total ?? 0).toFixed(0)}</span>
+                        <span className="text-xs text-rose-600 font-bold">MXN${(acc.total ?? 0).toFixed(0)}</span>
                         <i className="ri-arrow-right-s-line text-gray-400 text-sm" />
                       </div>
                     </button>
@@ -744,7 +744,7 @@ export default function AdminQuickSale() {
               <div className="bg-gray-900 rounded-2xl p-4 flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-xs uppercase tracking-widest">Total consumo</p>
-                  <p className="text-3xl font-black text-amber-400 mt-1">${accountTotal.toFixed(2)}</p>
+                  <p className="text-3xl font-black text-amber-400 mt-1">MXN${accountTotal.toFixed(2)}</p>
                   <p className="text-gray-500 text-xs mt-1">{closingAccount.folio_counter} ronda{closingAccount.folio_counter !== 1 ? 's' : ''}</p>
                 </div>
                 {closingAccount.customer_name && (
@@ -776,7 +776,7 @@ export default function AdminQuickSale() {
                 </div>
                 {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
                   <p className="text-xs text-rose-600 mt-2 font-medium">
-                    <i className="ri-information-line mr-1" />+3% terminal: ${cardFee.toFixed(2)}
+                    <i className="ri-information-line mr-1" />+3% terminal: MXN${cardFee.toFixed(2)}
                   </p>
                 )}
                 {paymentMethod === 'transfer' && (
@@ -825,7 +825,7 @@ export default function AdminQuickSale() {
                 </div>
                 {tip > 0 && (
                   <p className="text-xs text-emerald-600 mt-1 font-medium">
-                    <i className="ri-heart-3-line mr-1" />+${tip.toFixed(2)} propina
+                    <i className="ri-heart-3-line mr-1" />+MXN${tip.toFixed(2)} propina
                   </p>
                 )}
               </div>
@@ -846,15 +846,15 @@ export default function AdminQuickSale() {
 
               {/* Total final */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600"><span>Consumo</span><span>${accountTotal.toFixed(2)}</span></div>
-                {cardFee > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Cargo terminal (3%)</span><span>+${cardFee.toFixed(2)}</span></div>}
-                {tip > 0 && <div className="flex justify-between text-sm text-emerald-600"><span>Propina</span><span>+${tip.toFixed(2)}</span></div>}
+                <div className="flex justify-between text-sm text-gray-600"><span>Consumo</span><span>MXN${accountTotal.toFixed(2)}</span></div>
+                {cardFee > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Cargo terminal (3%)</span><span>+MXN${cardFee.toFixed(2)}</span></div>}
+                {tip > 0 && <div className="flex justify-between text-sm text-emerald-600"><span>Propina</span><span>+MXN${tip.toFixed(2)}</span></div>}
                 <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200">
-                  <span>TOTAL</span><span className="text-amber-600">${grandTotal.toFixed(2)}</span>
+                  <span>TOTAL</span><span className="text-amber-600">MXN${grandTotal.toFixed(2)}</span>
                 </div>
                 {splitCount > 1 && (
                   <div className="flex justify-between text-sm font-bold text-green-700 bg-green-50 rounded-lg px-3 py-2">
-                    <span>Por persona ({splitCount})</span><span>${perPerson.toFixed(2)}</span>
+                    <span>Por persona ({splitCount})</span><span>MXN${perPerson.toFixed(2)}</span>
                   </div>
                 )}
               </div>

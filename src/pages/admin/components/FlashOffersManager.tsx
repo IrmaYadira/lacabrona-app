@@ -412,7 +412,7 @@ export default function FlashOffersManager() {
                       >
                         <i className={isSelected ? 'ri-checkbox-circle-fill text-amber-500' : 'ri-circle-line text-gray-300'} />
                         <span className="flex-1 min-w-0 truncate">{p.name}</span>
-                        <span className="text-gray-400 text-xs">${p.price}</span>
+                        <span className="text-gray-400 text-xs">MXN${p.price}</span>
                       </button>
                     );
                   })

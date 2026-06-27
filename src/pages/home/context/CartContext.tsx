@@ -199,7 +199,8 @@ function loadProfiles(): CustomerProfile[] {
     const parsed = JSON.parse(raw) as CustomerProfile[];
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(p => p.name?.trim()).sort((a, b) => b.lastUsed - a.lastUsed);
-  } catch {
+  } catch (e) {
+    console.warn('[CartContext] readCart failed:', e);
     return [];
   }
 }
@@ -207,8 +208,8 @@ function loadProfiles(): CustomerProfile[] {
 function saveProfiles(profiles: CustomerProfile[]) {
   try {
     localStorage.setItem('lc_customer_profiles', JSON.stringify(profiles.slice(0, 8)));
-  } catch {
-    // ignore
+  } catch (e) {
+    console.warn('[CartContext] writeCart failed:', e);
   }
 }
 
@@ -357,8 +358,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const savedPhone = localStorage.getItem('lc_customer_phone');
       if (savedName) setCustomerName(savedName);
       if (savedPhone) setCustomerPhone(savedPhone);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.warn('[CartContext] loadOrders failed:', e);
     }
   }, []);
 
@@ -377,8 +378,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
               setFavorites(mostRecent.favorites ?? []);
             }
           }
-        } catch {
-          // ignore
+        } catch (e) {
+          console.warn('[CartContext] diffOrder failed:', e);
         }
       }
     };

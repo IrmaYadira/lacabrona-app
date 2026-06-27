@@ -11,7 +11,7 @@ interface SelectedPreparado {
   cartItem: CartItem;
   baseName: string;
   basePrice: number;
-  doublePrice: number;
+  showPrice: number;
 }
 
 export default function PreparadosSection() {
@@ -31,7 +31,7 @@ export default function PreparadosSection() {
       },
       baseName: item.baseName,
       basePrice: item.basePrice,
-      doublePrice: item.doublePrice,
+      showPrice: item.showPrice,
     });
   };
 
@@ -60,7 +60,7 @@ export default function PreparadosSection() {
               PREPARADOS
             </h2>
             <p className="text-gray-400 mt-3 max-w-xl mx-auto text-sm md:text-base">
-              Tu destilado favorito con refresco, agua mineral y hielo. Elige simple (30ml) o doble (60ml).
+              Tu destilado favorito con refresco, agua mineral y hielo. Elige simple (30ml), doble (60ml) o litro (90ml).
             </p>
           </div>
         </ScrollReveal>
@@ -70,6 +70,7 @@ export default function PreparadosSection() {
             const outOfStock = isPaused(`prep-${item.id}`);
             const favId = 700 + item.id;
             const fav = isFavorite(favId);
+            const doublePrice = item.basePrice * 2;
             return (
             <ScrollReveal key={item.id} delay={index * 100}>
               <div className={`bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 hover:-translate-y-1 transition-all duration-300 group ${outOfStock ? 'opacity-60' : ''}`}>
@@ -133,7 +134,7 @@ export default function PreparadosSection() {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">Simple</span>
+                        <span className="text-xs text-gray-500">Simple 30ml</span>
                         <FlashPrice
                           price={item.basePrice}
                           productName={item.name}
@@ -143,14 +144,16 @@ export default function PreparadosSection() {
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">Doble</span>
-                        <FlashPrice
-                          price={item.doublePrice}
-                          productName={item.name}
-                          category="Preparados"
-                          variant="dark"
-                          size="sm"
-                        />
+                        <span className="text-xs text-gray-500">Doble 60ml</span>
+                        <span className="text-sm text-white font-bold">
+                          ${doublePrice}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Litro 90ml</span>
+                        <span className="text-sm text-white font-bold">
+                          ${item.basePrice * 3}
+                        </span>
                       </div>
                     </div>
                     {outOfStock ? (
@@ -179,7 +182,7 @@ export default function PreparadosSection() {
           item={selected.cartItem}
           baseName={selected.baseName}
           basePrice={selected.basePrice}
-          doublePrice={selected.doublePrice}
+          showPrice={selected.showPrice}
           onClose={() => setSelected(null)}
         />
       )}

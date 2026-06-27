@@ -133,7 +133,6 @@ export function useLoyaltyCustomer() {
             }
             // Si la cuenta ya tiene otro customer_id: no sobreescribir (seguridad)
           } catch (linkErr) {
-            // No fallar el registro si el vinculado falla
             console.warn('[Loyalty] Error al vincular cuenta:', linkErr);
           }
         }

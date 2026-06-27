@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabasePos } from '../supabasePos';
 import { detectExtras } from '../utils/extrasPrice';
+import { speakNewOrder, speakExtraAlert, type OrderItemVoice } from '@/lib/orderSpeech';
 
 export interface WebOrderNotification {
   id: string;
@@ -136,6 +137,16 @@ function playExtraAlertSound() {
   }
 }
 
+interface PendingItem {
+  itemId: number;
+  accountId: number;
+  spot: string;
+  unitPrice: number;
+  size?: string;
+  productName: string;
+  quantity: number;
+}
+
 // Polling fallback: busca items web insertados recientemente
 async function pollRecentWebItems(
   knownIds: Set<number>,
@@ -144,6 +155,7 @@ async function pollRecentWebItems(
     account_id: number;
     unit_price: number;
     quantity: number;
+    product_name: string;
     size?: string;
     spot: string;
   }) => void
@@ -152,7 +164,7 @@ async function pollRecentWebItems(
     const since = new Date(Date.now() - 30_000).toISOString(); // últimos 30s
     const { data } = await supabasePos
       .from('pos_account_items')
-      .select('id, account_id, unit_price, quantity, size, origin, pos_accounts!inner(spot, origin)')
+      .select('id, account_id, unit_price, quantity, product_name, size, origin, pos_accounts!inner(spot, origin)')
       .eq('origin', 'web')
       .gte('created_at', since)
       .order('created_at', { ascending: false })
@@ -174,6 +186,7 @@ async function pollRecentWebItems(
         account_id: row.account_id as number,
         unit_price: row.unit_price as number,
         quantity: row.quantity as number,
+        product_name: (row.product_name as string) || 'Producto',
         size: (row.size as string) || undefined,
         spot,
       });
@@ -188,7 +201,7 @@ export function useWebOrderNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const processedItemIds = useRef<Set<number>>(new Set());
-  const pendingBatch = useRef<{ itemId: number; accountId: number; spot: string; unitPrice: number; size?: string }[]>([]);
+  const pendingBatch = useRef<PendingItem[]>([]);
   const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabasePos.channel> | null>(null);
@@ -213,7 +226,6 @@ export function useWebOrderNotifications() {
 
     // Para cada cuenta buscar el spot
     for (const [accountId, batchItems] of byAccount.entries()) {
-      // Spot ya viene en el batch
       const spot = batchItems[0].spot;
       const total = batchItems.reduce((s, i) => s + i.unitPrice, 0);
 
@@ -222,6 +234,12 @@ export function useWebOrderNotifications() {
         const extras = detectExtras(item.size ?? '');
         return extras.length > 0;
       });
+
+      // Construir items para voz
+      const voiceItems: OrderItemVoice[] = batchItems.map(i => ({
+        name: i.productName + (i.size ? ` ${i.size}` : ''),
+        qty: i.quantity,
+      }));
 
       const notification: WebOrderNotification = {
         id: `${accountId}-${Date.now()}`,
@@ -240,8 +258,12 @@ export function useWebOrderNotifications() {
       // Sonido diferente si tiene extras de pago
       if (hasExtras) {
         playExtraAlertSound();
+        // Voz de alerta especial para extras
+        setTimeout(() => speakExtraAlert(spot, voiceItems), 800);
       } else {
         playNotificationSound();
+        // Voz anunciando el pedido — inicia 600ms después del beep para no encimar
+        setTimeout(() => speakNewOrder(spot, voiceItems, total, false), 600);
       }
 
       // Auto-dismiss después de 30s
@@ -259,6 +281,7 @@ export function useWebOrderNotifications() {
     account_id: number;
     unit_price: number;
     quantity: number;
+    product_name: string;
     size?: string;
     spot: string;
   }) => {
@@ -273,6 +296,8 @@ export function useWebOrderNotifications() {
       accountId: newItem.account_id,
       spot,
       unitPrice: newItem.unit_price * newItem.quantity,
+      productName: newItem.product_name || 'Producto',
+      quantity: newItem.quantity,
       size: newItem.size ?? undefined,
     });
 
@@ -304,6 +329,7 @@ export function useWebOrderNotifications() {
             account_id: number;
             unit_price: number;
             quantity: number;
+            product_name?: string;
             origin?: string | null;
             size?: string | null;
           };
@@ -325,6 +351,7 @@ export function useWebOrderNotifications() {
             account_id: newItem.account_id,
             unit_price: newItem.unit_price,
             quantity: newItem.quantity,
+            product_name: newItem.product_name || 'Producto',
             size: newItem.size ?? undefined,
             spot,
           });
@@ -353,15 +380,12 @@ export function useWebOrderNotifications() {
   }, [handleNewItem]);
 
   useEffect(() => {
-    // ── Realtime subscription ──
     setupRealtime();
 
-    // ── Polling fallback cada 8 segundos — SIEMPRE activo para detectar items perdidos ──
     pollingInterval.current = setInterval(() => {
       pollRecentWebItems(processedItemIds.current, handleNewItem);
     }, 8000);
 
-    // Polling inmediato al montar por si hay items recientes
     pollRecentWebItems(processedItemIds.current, handleNewItem);
 
     return () => {
@@ -390,7 +414,6 @@ export function useWebOrderNotifications() {
     setUnreadCount(0);
   }, []);
 
-  // Marca todos los items web de una cuenta como entregados en la BD
   const markDelivered = useCallback(async (accountId: number) => {
     await supabasePos
       .from('pos_account_items')

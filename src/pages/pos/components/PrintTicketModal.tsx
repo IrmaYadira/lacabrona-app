@@ -19,6 +19,7 @@ interface PrintTicketModalProps {
   tip?: number;
   mode: 'comanda' | 'cuenta';
   folioNumber?: number; // solo para comanda de una ronda específica
+  customerPhone?: string; // teléfono del cliente para enviar ticket por WhatsApp
   onClose: () => void;
 }
 
@@ -140,6 +141,7 @@ export default function PrintTicketModal({
   tip = 0,
   mode,
   folioNumber,
+  customerPhone,
   onClose,
 }: PrintTicketModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -187,6 +189,70 @@ export default function PrintTicketModal({
 
   const handleBtPrint = async () => {
     await bt.print(buildTicketData());
+  };
+
+  // Construir mensaje de WhatsApp para enviar al cliente
+  const buildWhatsAppMessage = (): string => {
+    const lines: string[] = [];
+    lines.push('🧾 *LA CABRONA - Alitas & Beer*');
+    lines.push('Sinaloa 690, Zapopan');
+    lines.push('');
+    lines.push(`*Cuenta cerrada* — ${account.spot}`);
+    lines.push(`Área: ${AREA_LABELS[account.area as keyof typeof AREA_LABELS] ?? account.area}`);
+    if (account.customer_name) lines.push(`Cliente: ${account.customer_name}`);
+    lines.push(`Fecha: ${formatDateTime(account.created_at)}`);
+    lines.push('');
+
+    const folios = [...new Set(items.map(i => i.folio_number))].sort((a, b) => a - b);
+    folios.forEach(folio => {
+      const folioItems = items.filter(i => i.folio_number === folio);
+      const folioTotal = folioItems.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+      lines.push(`📋 *Ronda #${String(folio).padStart(2, '0')}* — $${folioTotal.toFixed(2)}`);
+      folioItems.forEach(item => {
+        lines.push(`  ${item.quantity}x ${item.product_name} — $${(item.unit_price * item.quantity).toFixed(2)}`);
+        if (item.size) lines.push(`    ↳ ${item.size}`);
+      });
+    });
+
+    lines.push('');
+    lines.push(`Subtotal: $${subtotal.toFixed(2)}`);
+    if (cardFee > 0) lines.push(`Cargo terminal (3%): +$${cardFee.toFixed(2)}`);
+    if (tip > 0) lines.push(`Propina: +$${tip.toFixed(2)}`);
+    lines.push(`*TOTAL: $${finalTotal.toFixed(2)}*`);
+
+    if (splitCount > 1) {
+      lines.push(`(${splitCount} personas · $${perPerson.toFixed(2)} c/u)`);
+    }
+
+    if (mixedPayments && mixedPayments.length > 0) {
+      lines.push('');
+      lines.push('*Pagos:*');
+      mixedPayments.forEach(p => {
+        const fee = (['credit_card', 'debit_card'] as PaymentMethod[]).includes(p.method)
+          ? p.amount * 0.03 : 0;
+        lines.push(`  ${MIXED_METHOD_LABELS[p.method]}: $${(p.amount + fee).toFixed(2)}`);
+      });
+    } else if (paymentMethod) {
+      lines.push(`Forma de pago: ${PAYMENT_LABELS[paymentMethod]}`);
+    }
+
+    if (folioPago) {
+      lines.push('');
+      lines.push(`✅ *PAGADO* — Folio: ${folioPago}`);
+    }
+
+    lines.push('');
+    lines.push('¡Gracias por tu visita! Vuelve pronto 🍻');
+
+    return lines.join('\n');
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!customerPhone) return;
+    const cleanPhone = customerPhone.replace(/\D/g, '');
+    const phone = cleanPhone.startsWith('52') ? cleanPhone : `52${cleanPhone}`;
+    const msg = buildWhatsAppMessage();
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const handlePrint = () => {
@@ -634,8 +700,17 @@ export default function PrintTicketModal({
             onClick={onClose}
             className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors whitespace-nowrap"
           >
-            Cancelar
+            Cerrar
           </button>
+          {customerPhone && (
+            <button
+              onClick={handleSendWhatsApp}
+              className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center gap-2"
+            >
+              <i className="ri-whatsapp-line text-lg" />
+              Enviar al cliente
+            </button>
+          )}
           <button
             onClick={handlePrint}
             className="flex-1 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-bold cursor-pointer transition-colors whitespace-nowrap flex items-center justify-center gap-2"

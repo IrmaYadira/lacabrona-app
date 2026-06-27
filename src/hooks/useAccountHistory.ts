@@ -37,8 +37,8 @@ function readHistory(): AccountHistoryEntry[] {
 function writeHistory(entries: AccountHistoryEntry[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
-  } catch {
-    // silencioso si localStorage no está disponible
+  } catch (e) {
+    console.warn('[AccountHistory] writeHistory failed:', e);
   }
 }
 
@@ -96,7 +96,13 @@ export function getAccountHistory(): AccountHistoryEntry[] {
 export function clearAccountHistory(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // silencioso
+  } catch (e) {
+    console.warn('[AccountHistory] clearAccountHistory failed:', e);
   }
+}
+
+export function removeAccountFromHistory(accountId: number): void {
+  const history = readHistory();
+  const filtered = history.filter(e => e.id !== accountId);
+  writeHistory(filtered);
 }

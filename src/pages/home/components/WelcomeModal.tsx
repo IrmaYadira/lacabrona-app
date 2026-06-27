@@ -64,7 +64,8 @@ function loadProfiles(): CustomerProfile[] {
       .filter(p => p.name?.trim())
       .sort((a, b) => b.lastUsed - a.lastUsed)
       .slice(0, MAX_PROFILES);
-  } catch {
+  } catch (e) {
+    console.warn('[WelcomeModal] getStored failed:', e);
     return [];
   }
 }

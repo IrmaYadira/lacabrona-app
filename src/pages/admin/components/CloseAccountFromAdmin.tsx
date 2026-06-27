@@ -62,6 +62,7 @@ export default function CloseAccountFromAdmin({
     splitCount: number;
     total: number;
     cardFee: number;
+    customerPhone?: string;
   } | null>(null);
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -281,7 +282,7 @@ export default function CloseAccountFromAdmin({
           delta: pointsEarned,
           points_before: prevPoints,
           points_after: newPoints,
-          reason: `Cierre de cuenta (Admin) — ${spot} — Total $${total.toFixed(2)} · Pago: ${METHOD_LABELS[primaryMethod]}`,
+          reason: `Cierre de cuenta (Admin) — ${spot} — Total MXN$${total.toFixed(2)} · Pago: ${METHOD_LABELS[primaryMethod]}`,
           adjusted_by: 'admin_auto',
         });
       }
@@ -291,7 +292,7 @@ export default function CloseAccountFromAdmin({
         account_id: accountId,
         customer_id: resolvedCustId,
         event_type: 'account_closed',
-        description: `Cuenta cerrada (Admin) — $${total.toFixed(2)} · ${METHOD_LABELS[primaryMethod]}${pointsEarned > 0 ? ` · +${pointsEarned} pts (total: ${newPoints})` : ''}`,
+        description: `Cuenta cerrada (Admin) — MXN$${total.toFixed(2)} · ${METHOD_LABELS[primaryMethod]}${pointsEarned > 0 ? ` · +${pointsEarned} pts (total: ${newPoints})` : ''}`,
         metadata: {
           spot,
           area,
@@ -324,6 +325,7 @@ export default function CloseAccountFromAdmin({
           splitCount,
           total,
           cardFee,
+          customerPhone: custPhone || undefined,
         });
       } else {
         onClosed();
@@ -436,7 +438,7 @@ export default function CloseAccountFromAdmin({
                 {selectedOpt.hasCardFee && (
                   <div className="bg-rose-50 rounded-lg px-3 py-2 text-xs text-rose-600 font-medium flex items-center gap-1.5">
                     <i className="ri-information-line" />
-                    Se agrega 3% de cargo por terminal: +${cardFee.toFixed(2)}
+                    Se agrega 3% de cargo por terminal: +MXN${cardFee.toFixed(2)}
                   </div>
                 )}
               </>
@@ -456,10 +458,10 @@ export default function CloseAccountFromAdmin({
                             <i className={`${opt.icon} ${opt.color}`} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900">${p.amount.toFixed(2)}</p>
+                            <p className="text-sm font-bold text-gray-900">MXN${p.amount.toFixed(2)}</p>
                             <p className="text-xs text-gray-500">
                               {METHOD_LABELS[p.method]}
-                              {fee > 0 && <span className="text-rose-500 ml-1">(+${fee.toFixed(2)} terminal)</span>}
+                              {fee > 0 && <span className="text-rose-500 ml-1">(+MXN${fee.toFixed(2)} terminal)</span>}
                             </p>
                           </div>
                           <button
@@ -497,11 +499,11 @@ export default function CloseAccountFromAdmin({
                           {remaining === 0 && !isOverpaid
                             ? 'Pago completo'
                             : isOverpaid
-                            ? `Sobrepago: +$${(mixedTotal - total).toFixed(2)}`
-                            : `Faltan: $${remaining.toFixed(2)}`}
+                            ? `Sobrepago: +MXN$${(mixedTotal - total).toFixed(2)}`
+                            : `Faltan: MXN$${remaining.toFixed(2)}`}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Pagado: ${mixedTotal.toFixed(2)} / Total: ${total.toFixed(2)}
+                          Pagado: MXN${mixedTotal.toFixed(2)} / Total: MXN${total.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -565,7 +567,7 @@ export default function CloseAccountFromAdmin({
                     {PAYMENT_OPTIONS.find(o => o.id === newMethod)?.hasCardFee && newAmount && parseFloat(newAmount) > 0 && (
                       <p className="text-xs text-rose-500 flex items-center gap-1">
                         <i className="ri-information-line" />
-                        +3% terminal: +${(parseFloat(newAmount) * 0.03).toFixed(2)}
+                        +3% terminal: +MXN${(parseFloat(newAmount) * 0.03).toFixed(2)}
                       </p>
                     )}
                   </div>
@@ -601,12 +603,12 @@ export default function CloseAccountFromAdmin({
             <div className="bg-gray-900 rounded-2xl px-5 py-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-sm">Subtotal</span>
-                <span className="text-white font-semibold">${subtotal.toFixed(2)}</span>
+                <span className="text-white font-semibold">MXN${subtotal.toFixed(2)}</span>
               </div>
               {cardFee > 0 && (
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-400 text-sm">Cargo terminal (3%)</span>
-                  <span className="text-rose-400 font-semibold">+${cardFee.toFixed(2)}</span>
+                  <span className="text-rose-400 font-semibold">+MXN${cardFee.toFixed(2)}</span>
                 </div>
               )}
               {isMixed && mixedPayments.length > 0 && (
@@ -621,7 +623,7 @@ export default function CloseAccountFromAdmin({
                           <i className={`${opt.icon} text-xs`} />
                           {METHOD_LABELS[p.method]}
                         </span>
-                        <span>${(p.amount + fee).toFixed(2)}</span>
+                        <span>MXN${(p.amount + fee).toFixed(2)}</span>
                       </div>
                     );
                   })}
@@ -629,12 +631,12 @@ export default function CloseAccountFromAdmin({
               )}
               <div className="border-t border-gray-700 pt-2 mt-1 flex justify-between items-center">
                 <span className="text-gray-300 text-sm font-semibold uppercase tracking-wide">Total</span>
-                <span className="text-amber-400 text-2xl font-black">${total.toFixed(2)}</span>
+                <span className="text-amber-400 text-2xl font-black">MXN${total.toFixed(2)}</span>
               </div>
               {splitCount > 1 && (
                 <div className="flex justify-between items-center mt-2 bg-gray-800 rounded-xl px-3 py-2">
                   <span className="text-gray-400 text-xs">Por persona ({splitCount})</span>
-                  <span className="text-white font-bold text-sm">${perPerson.toFixed(2)}</span>
+                  <span className="text-white font-bold text-sm">MXN${perPerson.toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -660,7 +662,7 @@ export default function CloseAccountFromAdmin({
                 ) : (
                   <>
                     <i className="ri-check-double-line" />
-                    {isMixed && remaining > 0 ? `Faltan $${remaining.toFixed(2)}` : 'Confirmar Cierre'}
+                    {isMixed && remaining > 0 ? `Faltan MXN$${remaining.toFixed(2)}` : 'Confirmar Cierre'}
                   </>
                 )}
               </button>
@@ -679,6 +681,7 @@ export default function CloseAccountFromAdmin({
             splitCount={printData.splitCount}
             total={printData.total}
             cardFee={printData.cardFee}
+            customerPhone={printData.customerPhone}
             mode="cuenta"
             onClose={handlePrintClose}
           />

@@ -26,6 +26,8 @@ interface Props {
   items: AccountItem[];
   onClose: () => void;
   onCancelled: () => void;
+  initialTab?: Tab;
+  targetFolio?: number;
 }
 
 type Tab = 'quitar' | 'modificar' | 'pago' | 'agregar';
@@ -90,7 +92,7 @@ function buildMenuCategories(): { label: string; icon: string; items: MenuItem[]
     {
       label: 'Preparados', icon: 'ri-cup-fill', items: preparadosMenu.flatMap(i => [
         { id: `prep-${i.id}-sencillo`, name: `${i.name} (Sencillo)`, price: i.basePrice },
-        { id: `prep-${i.id}-doble`, name: `${i.name} (Doble)`, price: i.doublePrice },
+        { id: `prep-${i.id}-doble`, name: `${i.name} (Doble)`, price: i.basePrice + i.showPrice },
       ])
     },
     { label: 'Azulitos', icon: 'ri-cup-line', items: azulitosMenu.map(i => ({ id: `azul-${i.id}`, name: i.name, price: i.price })) },
@@ -108,8 +110,8 @@ function buildMenuCategories(): { label: string; icon: string; items: MenuItem[]
 
 const ALL_MENU_CATEGORIES = buildMenuCategories();
 
-export default function AdminCancelItemModal({ accountId, spot, items, onClose, onCancelled }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('quitar');
+export default function AdminCancelItemModal({ accountId, spot, items, onClose, onCancelled, initialTab, targetFolio }: Props) {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'quitar');
   const [step, setStep] = useState<Step>('main');
 
   // — Quitar ítems state —
@@ -231,7 +233,9 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     if (agregarCart.length === 0) return;
 
     let folioNumber: number;
-    if (agregarMode === 'new' || currentFolioNum === 0) {
+    if (targetFolio !== undefined) {
+      folioNumber = targetFolio;
+    } else if (agregarMode === 'new' || currentFolioNum === 0) {
       folioNumber = currentFolioNum + 1;
       await supabasePos
         .from('pos_accounts')
@@ -254,13 +258,19 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
 
     // Push notification al cliente
     const folioTotal = agregarCart.reduce((s, e) => s + e.menuItem.price * e.quantity, 0);
-    const prefix = agregarMode === 'new' || currentFolioNum === 0
-      ? 'Nueva ronda agregada 🍗'
-      : 'Se agregó a tu ronda actual 🍺';
+    const isAddition = targetFolio !== undefined ? true : !(agregarMode === 'new' || currentFolioNum === 0);
+    const prefix = targetFolio !== undefined
+      ? 'Se agregó a tu ronda actual 🍺'
+      : isAddition
+        ? 'Se agregó a tu ronda actual 🍺'
+        : 'Nueva ronda agregada 🍗';
+    const waPrefix = isAddition
+      ? `➕ *AGREGA A RONDA #${String(folioNumber).padStart(2, '0')}*`
+      : `🍗 *NUEVA RONDA #${String(folioNumber).padStart(2, '0')}*`;
     sendPushNotification(
       accountId,
       prefix,
-      `Ronda #${String(folioNumber).padStart(2, '0')}: ${agregarCart.map(e => `${e.quantity}x ${e.menuItem.name}`).join(', ')} · Subtotal $${folioTotal.toFixed(2)}`,
+      `Ronda #${String(folioNumber).padStart(2, '0')}: ${agregarCart.map(e => `${e.quantity}x ${e.menuItem.name}`).join(', ')} · Subtotal MXN$${folioTotal.toFixed(2)}`,
       { tag: `admin-add-${accountId}-${Date.now()}`, data: { url: `/cuenta?id=${accountId}` } }
     ).catch(() => {});
 
@@ -286,11 +296,6 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     };
     const areaLabel = areaLabels[acctArea] ?? acctArea;
 
-    const isAddition = !(agregarMode === 'new' || currentFolioNum === 0);
-    const waPrefix = isAddition
-      ? `➕ *AGREGA A RONDA #${String(folioNumber).padStart(2, '0')}*`
-      : `🍗 *NUEVA RONDA #${String(folioNumber).padStart(2, '0')}*`;
-
     let waMsg = `${waPrefix}\n`;
     waMsg += `📍 *${acctSpot}* (${areaLabel})${acctZona ? ` · ${acctZona}` : ''}\n`;
     waMsg += `👤 *Admin* agregó productos\n`;
@@ -299,9 +304,9 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     agregarCart.forEach(e => {
       waMsg += `  • ${e.quantity}x ${e.menuItem.name}`;
       if (e.note) waMsg += ` _(${e.note})_`;
-      waMsg += ` — $${(e.menuItem.price * e.quantity).toFixed(2)}\n`;
+      waMsg += ` — MXN$${(e.menuItem.price * e.quantity).toFixed(2)}\n`;
     });
-    waMsg += `\n*Subtotal: $${folioTotal.toFixed(2)}*\n`;
+    waMsg += `\n*Subtotal: MXN$${folioTotal.toFixed(2)}*\n`;
     waMsg += `⏰ ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}\n`;
     waMsg += `\n_La Cabrona POS · Admin_`;
 
@@ -311,12 +316,15 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     }, 800);
 
     // Guardar log del ticket enviado
+    const ticketDesc = targetFolio !== undefined
+      ? `Admin agrega a Ronda #${String(folioNumber).padStart(2, '0')} — ${acctCustomerName || acctSpot}`
+      : isAddition
+        ? `Admin agrega a Ronda #${String(folioNumber).padStart(2, '0')} — ${acctCustomerName || acctSpot}`
+        : `Admin: Nueva Ronda #${String(folioNumber).padStart(2, '0')} — ${acctCustomerName || acctSpot}`;
     await supabasePos.from('pos_account_events').insert({
       account_id: accountId,
       event_type: 'whatsapp_ticket',
-      description: isAddition
-        ? `Admin agrega a Ronda #${String(folioNumber).padStart(2, '0')} — ${acctCustomerName || acctSpot}`
-        : `Admin: Nueva Ronda #${String(folioNumber).padStart(2, '0')} — ${acctCustomerName || acctSpot}`,
+      description: ticketDesc,
       metadata: {
         folio_number: folioNumber,
         is_addition: isAddition,
@@ -339,13 +347,16 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     });
 
     // ── Registrar evento de admin ──
+    const rondaDesc = targetFolio !== undefined
+      ? `Admin: Agregado ${agregarCart.length} producto${agregarCart.length !== 1 ? 's' : ''} a Ronda #${String(folioNumber).padStart(2, '0')} — Subtotal MXN$${folioTotal.toFixed(2)}`
+      : `Admin: Agregado ${agregarCart.length} producto${agregarCart.length !== 1 ? 's' : ''} a Ronda #${String(folioNumber).padStart(2, '0')} — Subtotal MXN$${folioTotal.toFixed(2)}`;
     await supabasePos.from('pos_account_events').insert({
       account_id: accountId,
       event_type: 'item_added_manual',
-      description: `Admin: Agregado ${agregarCart.length} producto${agregarCart.length !== 1 ? 's' : ''} a Ronda #${String(folioNumber).padStart(2, '0')} — Subtotal $${folioTotal.toFixed(2)}`,
+      description: rondaDesc,
       metadata: {
         folio_number: folioNumber,
-        is_new_round: agregarMode === 'new' || currentFolioNum === 0,
+        is_new_round: targetFolio !== undefined ? false : (agregarMode === 'new' || currentFolioNum === 0),
         items: agregarCart.map(e => ({ name: e.menuItem.name, quantity: e.quantity, unit_price: e.menuItem.price, note: e.note || null })),
         subtotal: folioTotal,
         added_by: 'admin',
@@ -355,7 +366,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
     setAgregarCart([]);
     setAgregarSearch('');
     setAgregarActiveCat(0);
-    setDoneMessage(`Se agregaron ${agregarCart.length} producto${agregarCart.length !== 1 ? 's' : ''} a ${spot} — Ronda #${String(folioNumber).padStart(2, '0')} · $${folioTotal.toFixed(2)} · 📱 Comanda enviada al bar`);
+    setDoneMessage(`Se agregaron ${agregarCart.length} producto${agregarCart.length !== 1 ? 's' : ''} a ${spot} — Ronda #${String(folioNumber).padStart(2, '0')} · MXN$${folioTotal.toFixed(2)} · 📱 Comanda enviada al bar`);
   };
 
   // ─── Confirmar PIN y ejecutar acción ───
@@ -524,7 +535,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                                     {item.product_name}
                                   </p>
                                   {item.size && <p className="text-xs text-amber-600">{item.size}</p>}
-                                  <p className="text-xs text-gray-400">${item.unit_price.toFixed(2)} c/u</p>
+                                  <p className="text-xs text-gray-400">MXN${item.unit_price.toFixed(2)} c/u</p>
                                 </div>
                                 {isSelected ? (
                                   <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -541,7 +552,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                                   </div>
                                 ) : (
                                   <span className="text-sm font-bold text-gray-700 flex-shrink-0">
-                                    {item.quantity}x ${(item.unit_price * item.quantity).toFixed(2)}
+                                    {item.quantity}x MXN${(item.unit_price * item.quantity).toFixed(2)}
                                   </span>
                                 )}
                               </div>
@@ -556,7 +567,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                   {selectedItems.size > 0 && (
                     <div className="flex items-center justify-between text-sm bg-red-50 border border-red-200 rounded-xl px-3 py-2">
                       <span className="text-red-700 font-medium">{selectedItems.size} ítem{selectedItems.size !== 1 ? 's' : ''} seleccionado{selectedItems.size !== 1 ? 's' : ''}</span>
-                      <span className="text-red-700 font-black">-${cancelSelectedTotal.toFixed(2)}</span>
+                      <span className="text-red-700 font-black">-MXN${cancelSelectedTotal.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex gap-3">
@@ -600,7 +611,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-semibold text-gray-900 leading-tight">{item.product_name}</p>
                                   {item.size && <p className="text-xs text-amber-600">{item.size}</p>}
-                                  <p className="text-xs text-gray-400">${item.unit_price.toFixed(2)} c/u</p>
+                                  <p className="text-xs text-gray-400">MXN${item.unit_price.toFixed(2)} c/u</p>
                                 </div>
                                 {changed && (
                                   <span className="text-xs text-amber-600 font-bold flex-shrink-0">
@@ -626,7 +637,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                                 </div>
                                 <div className="w-20 text-right flex-shrink-0">
                                   <p className={`text-sm font-bold ${changed ? 'text-amber-600' : 'text-gray-700'}`}>
-                                    ${(item.unit_price * currentQty).toFixed(2)}
+                                    MXN${(item.unit_price * currentQty).toFixed(2)}
                                   </p>
                                 </div>
                               </div>
@@ -644,7 +655,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Total anterior</span>
                       <span className="text-gray-500 line-through">
-                        ${items.reduce((s, i) => s + i.unit_price * i.quantity, 0).toFixed(2)}
+                        MXN$${items.reduce((s, i) => s + i.unit_price * i.quantity, 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm mt-1">
@@ -738,8 +749,17 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
             {/* ── TAB: AGREGAR PRODUCTOS ── */}
             {activeTab === 'agregar' && (
               <>
-                {/* Selector de ronda */}
-                {currentFolioNum > 0 && (
+                {/* Selector de ronda — cuando hay targetFolio se muestra fijo */}
+                {targetFolio !== undefined ? (
+                  <div className="px-5 pt-3 pb-2">
+                    <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      <i className="ri-add-circle-line text-amber-600" />
+                      <span className="text-xs font-bold text-amber-700">
+                        Agregando a Ronda #{String(targetFolio).padStart(2, '0')}
+                      </span>
+                    </div>
+                  </div>
+                ) : currentFolioNum > 0 ? (
                   <div className="px-5 pt-3 pb-2 flex items-center gap-2">
                     <button
                       onClick={() => setAgregarMode('current')}
@@ -764,7 +784,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                       Nueva ronda (#{String(currentFolioNum + 1).padStart(2, '0')})
                     </button>
                   </div>
-                )}
+                ) : null}
 
                 {/* Search */}
                 <div className="px-5 py-2">
@@ -827,7 +847,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                                   {inCart}
                                 </span>
                               )}
-                              <span className="text-sm font-bold text-green-600 whitespace-nowrap">${item.price.toFixed(2)}</span>
+                              <span className="text-sm font-bold text-green-600 whitespace-nowrap">MXN${item.price.toFixed(2)}</span>
                             </div>
                           </button>
                         );
@@ -870,7 +890,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                   {agregarCart.length > 0 && (
                     <div className="flex items-center justify-between text-sm bg-green-50 border border-green-200 rounded-xl px-3 py-2 mb-3">
                       <span className="text-green-700 font-medium">{agregarCartCount} producto{agregarCartCount !== 1 ? 's' : ''}</span>
-                      <span className="text-green-700 font-black">${agregarCartTotal.toFixed(2)}</span>
+                      <span className="text-green-700 font-black">MXN${agregarCartTotal.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex gap-3">
@@ -898,7 +918,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
             <div className="absolute inset-0 bg-black/40" onClick={() => setAgregarNoteItem(null)} />
             <div className="relative bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl">
               <h4 className="font-bold text-gray-900 mb-1">{agregarNoteItem.name}</h4>
-              <p className="text-green-600 font-bold text-lg mb-3">${agregarNoteItem.price.toFixed(2)}</p>
+              <p className="text-green-600 font-bold text-lg mb-3">MXN${agregarNoteItem.price.toFixed(2)}</p>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
                 Nota / Especificación (opcional)
               </label>
@@ -950,7 +970,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
               <h3 className="text-base font-black text-gray-900 mb-1">Confirmar con contraseña</h3>
               <p className="text-sm text-gray-500">
                 {activeTab === 'quitar' && (
-                  <>Se quitarán <strong className="text-red-600">{selectedItems.size} ítem{selectedItems.size !== 1 ? 's' : ''}</strong> — <strong className="text-red-600">-${cancelSelectedTotal.toFixed(2)}</strong></>
+                  <>Se quitarán <strong className="text-red-600">{selectedItems.size} ítem{selectedItems.size !== 1 ? 's' : ''}</strong> — <strong className="text-red-600">-MXN${cancelSelectedTotal.toFixed(2)}</strong></>
                 )}
                 {activeTab === 'modificar' && (
                   <>Se actualizarán las cantidades de <strong className="text-amber-600">{items.filter(i => modQtys[i.id] !== i.quantity).length} producto{items.filter(i => modQtys[i.id] !== i.quantity).length !== 1 ? 's' : ''}</strong></>
@@ -959,7 +979,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                   <>Se cambiará la forma de pago a <strong className="text-indigo-600">{PAYMENT_OPTIONS.find(p => p.id === newPayMethod)?.label}</strong></>
                 )}
                 {activeTab === 'agregar' && (
-                  <>Se agregarán <strong className="text-green-600">{agregarCartCount} producto{agregarCartCount !== 1 ? 's' : ''}</strong> — <strong className="text-green-600">+${agregarCartTotal.toFixed(2)}</strong> a {agregarMode === 'new' || currentFolioNum === 0 ? `Ronda #${String(currentFolioNum + 1).padStart(2, '0')} (nueva)` : `Ronda #${String(currentFolioNum).padStart(2, '0')} (actual)`}</>
+                  <>Se agregarán <strong className="text-green-600">{agregarCartCount} producto{agregarCartCount !== 1 ? 's' : ''}</strong> — <strong className="text-green-600">+MXN${agregarCartTotal.toFixed(2)}</strong> a {agregarMode === 'new' || currentFolioNum === 0 ? `Ronda #${String(currentFolioNum + 1).padStart(2, '0')} (nueva)` : `Ronda #${String(currentFolioNum).padStart(2, '0')} (actual)`}</>
                 )}
               </p>
             </div>
@@ -974,7 +994,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                       {cancelQtys[i.id] ?? i.quantity}x {i.product_name}
                     </span>
                     <span className="text-red-600 font-bold flex-shrink-0 ml-2">
-                      -${(i.unit_price * (cancelQtys[i.id] ?? i.quantity)).toFixed(2)}
+                      -MXN${(i.unit_price * (cancelQtys[i.id] ?? i.quantity)).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -1006,7 +1026,7 @@ export default function AdminCancelItemModal({ accountId, spot, items, onClose, 
                       {entry.quantity}x {entry.menuItem.name}{entry.note ? ` (${entry.note})` : ''}
                     </span>
                     <span className="text-green-600 font-bold flex-shrink-0 ml-2">
-                      +${(entry.menuItem.price * entry.quantity).toFixed(2)}
+                      +MXN${(entry.menuItem.price * entry.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}

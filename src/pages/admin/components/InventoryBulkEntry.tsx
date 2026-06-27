@@ -536,7 +536,7 @@ export default function InventoryBulkEntry() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">Valor estimado</span>
-              <span className="text-sm font-bold text-gray-900">${getTotalValue().toFixed(2)}</span>
+              <span className="text-sm font-bold text-gray-900">MXN${getTotalValue().toFixed(2)}</span>
             </div>
           </div>
         )}

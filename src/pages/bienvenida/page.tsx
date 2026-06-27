@@ -225,20 +225,6 @@ export default function BienvenidaPage() {
   const navigate = useNavigate();
 
   // Esta página es un flujo de onboarding interno, no debe indexarse
-  useEffect(() => {
-    const existing = document.querySelector('meta[name="robots"]');
-    if (existing) existing.remove();
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, nofollow';
-    document.head.appendChild(meta);
-    const originalTitle = document.title;
-    document.title = 'Bienvenida | La Cabrona';
-    return () => {
-      meta.remove();
-      document.title = originalTitle;
-    };
-  }, []);
 
   const mesa = params.get('mesa') || params.get('spot') || '';
   const area = params.get('area') || '';

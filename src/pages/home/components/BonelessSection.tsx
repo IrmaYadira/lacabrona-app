@@ -84,7 +84,7 @@ function BonelessCard({ isOpen, onToggle }: BonelessCardProps) {
         <img
           src={bonelessMenu.image}
           alt="Boneless"
-          title="Boneless La Cabrona — Sin hueso, 13 salsas"
+          title="Boneless La Cabrona — Sin hueso, 12 salsas"
           loading="lazy"
           decoding="async"
           fetchpriority="low"
@@ -339,7 +339,7 @@ export default function BonelessSection() {
               <img
                 src={bonelessMenu.image}
                 alt="Boneless La Cabrona"
-                title="Boneless La Cabrona — Sin hueso, 13 salsas"
+                title="Boneless La Cabrona — Sin hueso, 12 salsas"
                 loading="lazy"
                 decoding="async"
                 fetchpriority="low"

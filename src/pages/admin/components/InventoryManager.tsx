@@ -855,7 +855,7 @@ export default function InventoryManager() {
                               className="w-full px-2 py-1.5 border border-amber-300 rounded-lg text-xs text-gray-600 focus:outline-none focus:border-amber-500"
                             />
                           ) : (
-                            <span className="text-xs text-gray-500">${(product.price ?? 0).toFixed(2)}</span>
+                            <span className="text-xs text-gray-500">MXN${(product.price ?? 0).toFixed(2)}</span>
                           )}
                         </div>
                         {/* Stock */}
@@ -943,7 +943,7 @@ export default function InventoryManager() {
                   {sortedProducts.length} productos · Total en stock: {sortedProducts.reduce((s, p) => s + (p.stock ?? 0), 0)} unidades
                 </span>
                 <span className="text-xs text-gray-400 font-semibold">
-                  Valor estimado: ${sortedProducts.reduce((s, p) => s + (p.stock ?? 0) * (p.price ?? 0), 0).toFixed(2)}
+                  Valor estimado: MXN${sortedProducts.reduce((s, p) => s + (p.stock ?? 0) * (p.price ?? 0), 0).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -1260,7 +1260,7 @@ export default function InventoryManager() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Precio</span>
-                    <span className="text-xs font-bold text-gray-900">${parseFloat(newProductPrice).toFixed(2)}</span>
+                    <span className="text-xs font-bold text-gray-900">MXN${parseFloat(newProductPrice).toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Stock inicial</span>
@@ -1268,7 +1268,7 @@ export default function InventoryManager() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Valor total</span>
-                    <span className="text-xs font-bold text-gray-900">${(parseFloat(newProductPrice) * parseInt(newProductStock)).toFixed(2)}</span>
+                    <span className="text-xs font-bold text-gray-900">MXN${(parseFloat(newProductPrice) * parseInt(newProductStock)).toFixed(2)}</span>
                   </div>
                 </div>
               )}

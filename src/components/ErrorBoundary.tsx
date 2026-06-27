@@ -33,6 +33,15 @@ export default class ErrorBoundary extends Component<Props, State> {
     );
   }
 
+  isChunkError = () => {
+    const msg = this.state.error?.message || "";
+    return (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("error loading dynamically imported module")
+    );
+  };
+
   handleCopy = () => {
     const { error, errorInfo } = this.state;
     const text = `Error: ${error?.message || "N/A"}\n\nStack:\n${error?.stack || "N/A"}\n\nComponent Stack:\n${errorInfo?.componentStack || "N/A"}`;
@@ -52,17 +61,22 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isChunk = this.isChunkError();
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
           <div className="w-full max-w-lg">
             {/* Icono */}
             <div className="text-center mb-6">
-              <div className="w-20 h-20 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <i className="ri-error-warning-line text-3xl text-red-500" />
+              <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${isChunk ? "bg-amber-100" : "bg-red-100"}`}>
+                <i className={`ri-${isChunk ? "refresh-line" : "error-warning-line"} text-3xl ${isChunk ? "text-amber-500" : "text-red-500"}`} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Algo salió mal</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">
+                {isChunk ? "Actualización disponible" : "Algo salió mal"}
+              </h2>
               <p className="text-sm text-gray-500">
-                Ocurrió un error inesperado. Puedes recargar la página o volver al inicio.
+                {isChunk
+                  ? "La app se actualizó. Recarga la página para cargar la versión más reciente."
+                  : "Ocurrió un error inesperado. Puedes recargar la página o volver al inicio."}
               </p>
             </div>
 
@@ -70,8 +84,8 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">
-                    Error
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${isChunk ? "text-amber-600" : "text-red-600"}`}>
+                    {isChunk ? "Actualización" : "Error"}
                   </span>
                   <span className="text-[10px] text-gray-400">
                     {new Date().toLocaleString()}
@@ -131,7 +145,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-colors"
               >
                 <i className="ri-refresh-line" />
-                Recargar página
+                {isChunk ? "Recargar y actualizar" : "Recargar página"}
               </button>
               <button
                 onClick={this.handleGoHome}

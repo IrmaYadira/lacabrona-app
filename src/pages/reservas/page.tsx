@@ -1,12 +1,38 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { barInfo } from "@/mocks/menu";
-import { usePageSEO } from "@/hooks/usePageSEO";
-import { SITE_URL } from "@/lib/site-url";
 import LazyIframe from "@/components/base/LazyIframe";
+import JsonLd from "@/components/JsonLd";
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
+
+const RESERVAS_JSONLD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://barlacabrona.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Reservas", "item": "https://barlacabrona.com/reservas" }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://barlacabrona.com/reservas",
+      "name": "Reserva tu mesa en La Cabrona Alitas & Beer | Zapopan, Jalisco",
+      "description": "Reserva tu mesa en La Cabrona, el bar de alitas y cerveza fria en El Mante, Zapopan, Jalisco. Formulario rapido de reservacion con fecha, hora, numero de personas y zona preferida. Confirmacion por WhatsApp.",
+      "url": "https://barlacabrona.com/reservas",
+      "isPartOf": { "@id": "https://barlacabrona.com/" },
+      "about": { "@id": "https://barlacabrona.com/#business" },
+      "inLanguage": "es",
+      "speakable": {
+        "@type": "SpeakableSpecification",
+        "cssSelector": ["h1", ".reservation-intro"]
+      }
+    }
+  ]
+};
 
 const ZONES = [
   { value: '', label: 'Sin preferencia' },
@@ -143,6 +169,10 @@ function buildCancelRequestMessage(
 }
 
 export default function Reservas() {
+  useEffect(() => {
+    document.title = 'Reserva tu Mesa en La Cabrona | Alitas, Cerveza & Billar en Zapopan';
+  }, []);
+
   const [form, setForm] = useState({
     customer_name: '',
     phone: '',
@@ -154,40 +184,10 @@ export default function Reservas() {
     occasion: '',
     notes: '',
   });
-  const [errors, setErrors] = useState<Record<string, string>>();
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [reservationId, setReservationId] = useState<number | null>(null);
-
-  usePageSEO({
-    title: "Reserva tu Mesa | La Cabrona Alitas & Beer Zapopan",
-    description: "Reserva tu mesa en La Cabrona Alitas & Beer en Zapopan, El Mante. Aparta con anticipación para cumpleaños, reuniones, citas y ocasiones especiales. Te confirmamos por teléfono.",
-    canonicalUrl: `${SITE_URL}/reservas`,
-    ogImage: LOGO_URL,
-    keywords: "reservar mesa Zapopan, reserva bar El Mante, cumpleaños bar Zapopan, reservación La Cabrona",
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Reservar Mesa", "item": `${SITE_URL}/reservas` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FoodEstablishmentReservation",
-        "name": "Reserva de Mesa — La Cabrona Alitas & Beer Zapopan",
-        "url": `${SITE_URL}/reservas`,
-        "provider": { "@id": `${SITE_URL}/#business` },
-        "potentialAction": {
-          "@type": "ReserveAction",
-          "target": { "@type": "EntryPoint", "urlTemplate": `${SITE_URL}/reservas`, "inLanguage": "es", "actionPlatform": ["http://schema.org/DesktopWebPlatform", "http://schema.org/MobileWebPlatform"] },
-          "result": { "@type": "FoodEstablishmentReservation", "name": "Reserva de Mesa — La Cabrona Alitas & Beer Zapopan" }
-        }
-      }
-    ],
-  });
 
   const today = useMemo(() => {
     const d = new Date();
@@ -369,6 +369,7 @@ export default function Reservas() {
 
   return (
     <div className="min-h-screen bg-gray-950">
+      <JsonLd data={RESERVAS_JSONLD} />
       {/* Header */}
       <header className="bg-gray-900 border-b border-gray-800">
         <div className="max-w-5xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between">

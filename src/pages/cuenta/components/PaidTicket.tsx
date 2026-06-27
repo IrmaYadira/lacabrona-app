@@ -92,7 +92,7 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
     const date = formatDate(payment.created_at);
     const time = formatTime(payment.created_at);
     const lines: string[] = [
-      '🍗 LA CABRONA — Alitas & Beer',
+      '\uD83C\uDF57 LA CABRONA — Alitas & Beer',
       '─────────────────────────',
       `Mesa: ${spot}`,
       `Fecha: ${date} · ${time}`,
@@ -133,7 +133,7 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
       lines.push(`Dividido: ${splitCount} personas · $${perPerson.toFixed(2)} c/u`);
     }
     lines.push('─────────────────────────');
-    lines.push('¡Gracias por tu visita! 🍺');
+    lines.push('\u00A1Gracias por tu visita! \uD83C\uDF7A');
     lines.push('barlacabrona.com');
 
     return lines.join('\n');
@@ -144,8 +144,8 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
       await navigator.clipboard.writeText(buildTicketText());
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch {
-      /* noop */
+    } catch (e) {
+      console.warn('[PaidTicket] clipboard copy failed:', e);
     }
   };
 
@@ -172,8 +172,8 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
       link.download = `Ticket-LaCabrona-${spot}-${payment.id}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-    } catch {
-      /* noop */
+    } catch (e) {
+      console.warn('[PaidTicket] download image failed:', e);
     }
   };
 
@@ -339,7 +339,7 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
 
         {/* Footer */}
         <div className="px-5 py-4 text-center border-t border-gray-800">
-          <p className="text-gray-500 text-xs">¡Gracias por tu visita!</p>
+          <p className="text-gray-500 text-xs">\u00A1Gracias por tu visita!</p>
           <p className="text-amber-500 text-xs font-bold mt-1">barlacabrona.com</p>
         </div>
       </div>
@@ -380,7 +380,7 @@ export default function PaidTicket({ spot, customerName, items, payment }: PaidT
         >
           <i className={copied ? 'ri-check-line text-green-400' : 'ri-file-copy-line'} />
           <span className={copied ? 'text-green-400' : ''}>
-            {copied ? '¡Ticket copiado al portapapeles!' : 'Copiar ticket como texto'}
+            {copied ? '\u00A1Ticket copiado al portapapeles!' : 'Copiar ticket como texto'}
           </span>
         </button>
       </div>

@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /menu
+Allow: /reservas
+Allow: /landing
 
 # Páginas privadas — no indexar
 Disallow: /admin
@@ -9,5 +12,10 @@ Disallow: /cuenta
 Disallow: /gracias
 Disallow: /mi-tarjeta
 Disallow: /qr
+Disallow: /guia
+Disallow: /billar
+Disallow: /billar/renta
+Disallow: /buscar-cuenta
+Disallow: /mis-cuentas
 
 Sitemap: https://example.com/sitemap.xml

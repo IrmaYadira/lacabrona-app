@@ -83,8 +83,8 @@ export default function AdminKitchenView() {
       oscillator.start(ctx.currentTime);
       oscillator.stop(ctx.currentTime + 0.5);
       audioRef.current = ctx;
-    } catch {
-      // Audio not available
+    } catch (e) {
+      console.warn('[AdminKitchen] playBeep failed:', e);
     }
   }, []);
 

@@ -148,8 +148,8 @@ export default function CartDrawer() {
         setCustomerName(mostRecent.name);
         if (mostRecent.phone) setCustomerPhone(mostRecent.phone);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.warn('[CartDrawer] auto-load customer failed:', e);
     }
   }, [isOpen, customerName, setCustomerName, setCustomerPhone]);
 

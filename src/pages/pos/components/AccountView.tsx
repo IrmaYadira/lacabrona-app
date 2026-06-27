@@ -89,6 +89,18 @@ export default function AccountView({ accountId, spotLabel, areaLabel, onBack, o
   const [closedSummary, setClosedSummary] = useState<{ total: number; method: string; split: number } | null>(null);
   const [clientPhone, setClientPhone] = useState('');
   const [showMerge, setShowMerge] = useState(false);
+  // Datos para PrintTicketModal después de cerrar cuenta en POS
+  const [closedTicketData, setClosedTicketData] = useState<{
+    account: PosAccount;
+    items: PosAccountItem[];
+    paymentMethod: PaymentMethod;
+    mixedPayments?: MixedPaymentEntry[];
+    splitCount: number;
+    total: number;
+    cardFee: number;
+    tip: number;
+    customerPhone?: string;
+  } | null>(null);
   const [editNoteItem, setEditNoteItem] = useState<{ id: number; currentNote: string } | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
   // Modal para editar/agregar producto manual
@@ -745,7 +757,17 @@ export default function AccountView({ accountId, spotLabel, areaLabel, onBack, o
 
       setClosedSummary({ total, method: label, split: splitCount });
       setShowClose(false);
-      setShowWhatsApp(true);
+      setClosedTicketData({
+        account: currentAccount,
+        items: currentAccount.pos_account_items ?? [],
+        paymentMethod: method,
+        mixedPayments,
+        splitCount,
+        total,
+        cardFee: fee,
+        tip: tip ?? 0,
+        customerPhone: currentAccount.customer_phone || undefined,
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error desconocido al cerrar cuenta';
       console.error('handleCloseAccount error:', err);
@@ -1626,7 +1648,7 @@ export default function AccountView({ accountId, spotLabel, areaLabel, onBack, o
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">Total Cuenta</p>
-                <p className="text-2xl font-bold text-amber-400">${total.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-amber-400">MXN$${total.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -1969,7 +1991,24 @@ export default function AccountView({ accountId, spotLabel, areaLabel, onBack, o
         </div>
       )}
 
-      {/* WhatsApp confirm */}
+      {/* ===== TICKET DESPUÉS DE CERRAR CUENTA ===== */}
+      {closedTicketData && (
+        <PrintTicketModal
+          account={closedTicketData.account}
+          items={closedTicketData.items}
+          paymentMethod={closedTicketData.paymentMethod}
+          mixedPayments={closedTicketData.mixedPayments}
+          splitCount={closedTicketData.splitCount}
+          total={closedTicketData.total}
+          cardFee={closedTicketData.cardFee}
+          tip={closedTicketData.tip}
+          customerPhone={closedTicketData.customerPhone}
+          mode="cuenta"
+          onClose={() => { setClosedTicketData(null); onAccountClosed(); }}
+        />
+      )}
+
+      {/* WhatsApp confirm — fallback manual */}
       {showWhatsApp && closedSummary && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/60" />
@@ -1980,7 +2019,7 @@ export default function AccountView({ accountId, spotLabel, areaLabel, onBack, o
               </div>
               <h3 className="font-bold text-gray-900 text-lg mb-1">Cuenta Cerrada</h3>
               <p className="text-gray-500 text-sm">
-                Total: <strong className="text-amber-600">${closedSummary.total.toFixed(2)}</strong>
+                Total: <strong className="text-amber-600">MXN$${closedSummary.total.toFixed(2)}</strong>
                 {' · '}{closedSummary.method}
               </p>
             </div>

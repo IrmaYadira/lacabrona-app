@@ -71,7 +71,7 @@ export default function TopProducts({ dateRange }: TopProductsProps) {
                       <p className="text-xs text-gray-400">unidades</p>
                     </div>
                     <div className="col-span-3 text-right">
-                      <p className="text-sm font-bold text-gray-900">${product.total_revenue.toFixed(2)}</p>
+                      <p className="text-sm font-bold text-gray-900">MXN${product.total_revenue.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export default function TopProducts({ dateRange }: TopProductsProps) {
               Total vendido
             </span>
             <span className="text-base font-black text-amber-400">
-              {topProducts.reduce((s, p) => s + p.total_qty, 0)} productos · ${topProducts.reduce((s, p) => s + p.total_revenue, 0).toFixed(2)}
+              {topProducts.reduce((s, p) => s + p.total_qty, 0)} productos · MXN${topProducts.reduce((s, p) => s + p.total_revenue, 0).toFixed(2)}
             </span>
           </div>
         </div>

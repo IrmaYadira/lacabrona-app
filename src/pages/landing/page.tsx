@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { usePageSEO } from "@/hooks/usePageSEO";
-import { SITE_URL } from "@/lib/site-url";
+import JsonLd from "@/components/JsonLd";
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
 
@@ -39,6 +38,41 @@ function Reveal({ children, className = "", delay = 0 }: { children: React.React
     </div>
   );
 }
+
+const LANDING_JSONLD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://barlacabrona.com/" },
+        { "@type": "ListItem", "position": 2, "name": "QRestPOS", "item": "https://barlacabrona.com/landing" }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://barlacabrona.com/landing",
+      "name": "QRestPOS — Sistema POS y Menú Digital para Restaurantes, Bares y Food Trucks",
+      "description": "Sistema POS y menú digital para restaurantes, bares, cervecerías y food trucks en México. Simple, rápido y sin instalaciones. Digitaliza tu restaurante en minutos con QRestPOS, creado por La Cabrona.",
+      "url": "https://barlacabrona.com/landing",
+      "isPartOf": { "@id": "https://barlacabrona.com/" },
+      "about": {
+        "@type": "SoftwareApplication",
+        "name": "QRestPOS",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Sistema de punto de venta y menú digital para restaurantes, bares y food trucks en México. Gestión de cuentas, inventario, lealtad de clientes, menú digital QR, y panel administrativo.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "MXN",
+          "description": "Demo gratuita disponible"
+        }
+      },
+      "inLanguage": "es"
+    }
+  ]
+};
 
 const WHATSAPP_DEMO = "https://wa.me/5213348567795?text=Hola!%20Vengo%20de%20la%20landing%20y%20quiero%20una%20demo%20gratis%20del%20sistema%20POS%20para%20mi%20restaurante.";
 const WHATSAPP_TIKTOK = "https://wa.me/5213348567795?text=Hola!%20Vengo%20de%20TikTok%20y%20quiero%20una%20demo%20gratis%20del%20sistema%20POS%20para%20mi%20restaurante.";
@@ -160,62 +194,6 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  usePageSEO({
-    title: "QRestPOS — Sistema POS y Menú Digital para Restaurantes y Bares en México",
-    description: "Sistema POS móvil + menú digital con QR para restaurantes, bares y food trucks en México. Comandas en tiempo real, programa de lealtad, reservaciones y reportes automáticos. Demo gratis por WhatsApp.",
-    canonicalUrl: `${SITE_URL}/landing`,
-    ogImage: LOGO_URL,
-    keywords: "sistema POS restaurantes, menú digital QR, POS México, QRestPOS, punto de venta restaurantes",
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "La Cabrona Alitas & Beer", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "QRestPOS — Sistema POS para Restaurantes", "item": `${SITE_URL}/landing` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "QRestPOS",
-        "applicationCategory": "BusinessApplication",
-        "operatingSystem": "Web, iOS, Android",
-        "description": "Sistema POS y menú digital con QR para restaurantes y bares en México. Comandas en tiempo real, lealtad, reservaciones y reportes automatizados. Sin instalaciones, sin contratos.",
-        "url": `${SITE_URL}/landing`,
-        "inLanguage": "es",
-        "offers": [{
-          "@type": "Offer",
-          "name": "Demo Gratis QRestPOS",
-          "price": "0",
-          "priceCurrency": "MXN",
-          "description": "Demo gratis sin compromiso durante 1 semana"
-        }],
-        "featureList": [
-          "Menú digital con QR",
-          "POS móvil sin instalaciones",
-          "Comandas en tiempo real a cocina",
-          "Programa de lealtad",
-          "Reservaciones de mesa",
-          "Reportes y estadísticas de ventas"
-        ],
-        "provider": {
-          "@type": "Organization",
-          "name": "QRestPOS",
-          "url": `${SITE_URL}/landing`,
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "name": "Ventas QRestPOS",
-            "telephone": "+52-33-4856-7795",
-            "contactType": "sales",
-            "availableLanguage": "Spanish",
-            "contactOption": "TollFree"
-          }
-        }
-      }
-    ],
-  });
-
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -226,6 +204,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-['Inter']">
+      <JsonLd data={LANDING_JSONLD} />
       {/* TikTok Popup */}
       <TikTokPopup />
 

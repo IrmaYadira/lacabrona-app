@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
-  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu,
+  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu, caguamasMenu,
   ampolletasMenu, nonAlcoholicBeersMenu, micheladaMenu, micheladaConCamaronMenu,
   sidesMenu, hotDogsMenu, burgersMenu, comboMenu, sodasMenu,
   cannedAlcoholicMenu, shotShowsMenu, vasosPreparadosMenu, azulitosMenu, preparadosMenu,
@@ -30,6 +30,7 @@ function buildAllProducts(): ProductEntry[] {
   beerMenu.forEach(i => list.push({ id: String(i.id), name: i.name, price: i.price, category: 'Cervezas Mega' }));
   halfBeersMenu.forEach(i => list.push({ id: `half-${i.id}`, name: i.name, price: i.price, category: 'Cervezas Medio' }));
   pacificoBeersMenu.forEach(i => list.push({ id: `pac-${i.id}`, name: i.name, price: i.price, category: 'Pacífico' }));
+  caguamasMenu.forEach(i => list.push({ id: `cag-${i.id}`, name: i.name, price: i.price, category: 'Caguamas' }));
   ampolletasMenu.forEach(i => list.push({ id: `amp-${i.id}`, name: i.name, price: i.price, category: 'Ampolletas' }));
   nonAlcoholicBeersMenu.forEach(i => list.push({ id: `na-${i.id}`, name: i.name, price: i.price, category: 'Sin Alcohol' }));
   barrilMenu.forEach(i => list.push({ id: `barril-${i.id}`, name: i.name, price: i.price, category: 'Barril' }));

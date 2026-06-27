@@ -28,8 +28,8 @@ export function useCartSound() {
 
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.15);
-    } catch {
-      // Silently fail if audio is not supported or blocked
+    } catch (e) {
+      console.warn('[CartSound] playAddSound failed (audio blocked?):', e);
     }
   }
 
@@ -50,8 +50,8 @@ export function useCartSound() {
 
       osc.start(audioCtx.currentTime);
       osc.stop(audioCtx.currentTime + 0.12);
-    } catch {
-      // Silently fail
+    } catch (e) {
+      console.warn('[CartSound] playRemoveSound failed:', e);
     }
   }
 

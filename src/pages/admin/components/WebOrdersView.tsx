@@ -62,7 +62,7 @@ function playAlertSound() {
     playBeep(880, 0.4, 0.15);
     playBeep(1100, 0.6, 0.25);
   } catch (_) {
-    // silencioso si el browser bloquea audio
+    console.warn('[WebOrders] playAlertSound failed:', _);
   }
 }
 
@@ -192,7 +192,7 @@ export default function WebOrdersView() {
 
     setClosingLoading(false);
     setClosingId(null);
-    setSuccessMsg(`Cuenta cerrada · ${closingOrder.spot} · $${grandTotal.toFixed(2)}`);
+    setSuccessMsg(`Cuenta cerrada · ${closingOrder.spot} · MXN$${grandTotal.toFixed(2)}`);
     await fetchOrders(true);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
@@ -385,7 +385,7 @@ export default function WebOrdersView() {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <p className="font-black text-amber-600 text-lg">${(order._subtotal ?? 0).toFixed(2)}</p>
+                    <p className="font-black text-amber-600 text-lg">MXN${(order._subtotal ?? 0).toFixed(2)}</p>
                     <p className="text-xs text-gray-400">{order.pos_account_items?.length ?? 0} productos</p>
                   </div>
 
@@ -405,7 +405,7 @@ export default function WebOrdersView() {
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">
                               Ronda #{String(folio).padStart(2, '0')}
                             </span>
-                            <span className="text-xs font-bold text-amber-600">${folioTotal.toFixed(2)}</span>
+                            <span className="text-xs font-bold text-amber-600">MXN${folioTotal.toFixed(2)}</span>
                           </div>
                           <div className="space-y-1.5">
                             {folioItems.map(item => (
@@ -415,7 +415,7 @@ export default function WebOrdersView() {
                                   <span className="text-gray-700">{item.product_name}</span>
                                   {item.size && <p className="text-xs text-amber-600 ml-5 italic">{item.size}</p>}
                                 </div>
-                                <span className="font-medium text-gray-900 ml-2 flex-shrink-0">${(item.unit_price * item.quantity).toFixed(2)}</span>
+                                <span className="font-medium text-gray-900 ml-2 flex-shrink-0">MXN${(item.unit_price * item.quantity).toFixed(2)}</span>
                               </div>
                             ))}
                           </div>
@@ -426,7 +426,7 @@ export default function WebOrdersView() {
                     {/* Total */}
                     <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center">
                       <span className="text-sm font-bold text-gray-700">Total consumo</span>
-                      <span className="text-xl font-black text-amber-600">${(order._subtotal ?? 0).toFixed(2)}</span>
+                      <span className="text-xl font-black text-amber-600">MXN${(order._subtotal ?? 0).toFixed(2)}</span>
                     </div>
 
                     {/* Botones */}
@@ -493,7 +493,7 @@ export default function WebOrdersView() {
               {/* Total */}
               <div className="bg-gray-900 rounded-2xl p-4 text-center">
                 <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Total a cobrar</p>
-                <p className="text-4xl font-black text-amber-400">${closingSubtotal.toFixed(2)}</p>
+                <p className="text-4xl font-black text-amber-400">MXN${closingSubtotal.toFixed(2)}</p>
                 <p className="text-gray-500 text-xs mt-1">{closingOrder.folio_counter} ronda{closingOrder.folio_counter !== 1 ? 's' : ''} · {closingOrder.pos_account_items?.length ?? 0} productos</p>
               </div>
 
@@ -513,7 +513,7 @@ export default function WebOrdersView() {
                   ))}
                 </div>
                 {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
-                  <p className="text-xs text-rose-600 mt-2 font-medium"><i className="ri-information-line mr-1" />+3% terminal: ${cardFee.toFixed(2)}</p>
+                  <p className="text-xs text-rose-600 mt-2 font-medium"><i className="ri-information-line mr-1" />+3% terminal: MXN${cardFee.toFixed(2)}</p>
                 )}
                 {paymentMethod === 'transfer' && (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
@@ -550,10 +550,10 @@ export default function WebOrdersView() {
 
               {/* Resumen */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600"><span>Consumo</span><span>${closingSubtotal.toFixed(2)}</span></div>
-                {cardFee > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Terminal (3%)</span><span>+${cardFee.toFixed(2)}</span></div>}
-                <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200"><span>TOTAL</span><span className="text-amber-600">${grandTotal.toFixed(2)}</span></div>
-                {splitCount > 1 && <div className="flex justify-between text-sm font-bold text-green-700 bg-green-50 rounded-lg px-3 py-2"><span>Por persona ({splitCount})</span><span>${perPerson.toFixed(2)}</span></div>}
+                <div className="flex justify-between text-sm text-gray-600"><span>Consumo</span><span>MXN${closingSubtotal.toFixed(2)}</span></div>
+                {cardFee > 0 && <div className="flex justify-between text-sm text-rose-600"><span>Terminal (3%)</span><span>+MXN${cardFee.toFixed(2)}</span></div>}
+                <div className="flex justify-between text-xl font-black text-gray-900 pt-2 border-t border-gray-200"><span>TOTAL</span><span className="text-amber-600">MXN${grandTotal.toFixed(2)}</span></div>
+                {splitCount > 1 && <div className="flex justify-between text-sm font-bold text-green-700 bg-green-50 rounded-lg px-3 py-2"><span>Por persona ({splitCount})</span><span>MXN${perPerson.toFixed(2)}</span></div>}
               </div>
 
               <div className="flex gap-3">

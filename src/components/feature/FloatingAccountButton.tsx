@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { getActiveAccount, type ActiveAccount } from '@/hooks/useActiveAccount';
+import { getActiveAccount, clearPersistedAccount, type ActiveAccount } from '@/hooks/useActiveAccount';
 import { supabasePos } from '@/pages/pos/supabasePos';
 
 export default function FloatingAccountButton() {
@@ -13,39 +13,64 @@ export default function FloatingAccountButton() {
   const prevTotal = useRef(0);
   const prevQty = useRef(0);
 
-  // Leer cuenta activa y total en tiempo real
+  // Leer cuenta activa y total en tiempo real — también verifica si sigue abierta
   useEffect(() => {
     const check = async () => {
       const acc = getActiveAccount();
-      setAccount(acc);
-      if (acc) {
-        setTimeout(() => setVisible(true), 300);
-        // Fetch total actual de la cuenta
-        try {
-          const { data: items } = await supabasePos
-            .from('pos_account_items')
-            .select('unit_price, quantity')
-            .eq('account_id', acc.accountId);
-          const newTotal = (items ?? []).reduce((s, it) => s + (it.unit_price * it.quantity), 0);
-          const newQty = (items ?? []).reduce((s, it) => s + it.quantity, 0);
-          setTotal(newTotal);
-          setTotalQty(newQty);
-          // Pulse anim si el total cambió
-          if (newTotal !== prevTotal.current && prevTotal.current > 0) {
-            setTotalPulse(true);
-            setTimeout(() => setTotalPulse(false), 800);
-          }
-          prevTotal.current = newTotal;
-          prevQty.current = newQty;
-        } catch {
-          // silencioso
-        }
-      } else {
+      if (!acc) {
+        setAccount(null);
         setVisible(false);
         setTotal(0);
         setTotalQty(0);
         prevTotal.current = 0;
         prevQty.current = 0;
+        return;
+      }
+
+      // Verificar si la cuenta sigue abierta antes de mostrarla
+      try {
+        const { data: statusData } = await supabasePos
+          .from('pos_accounts')
+          .select('status')
+          .eq('id', acc.accountId)
+          .maybeSingle();
+        if (statusData?.status === 'closed') {
+          // Cuenta cerrada — limpiar localStorage y ocultar botón
+          clearPersistedAccount();
+          setAccount(null);
+          setVisible(false);
+          setTotal(0);
+          setTotalQty(0);
+          prevTotal.current = 0;
+          prevQty.current = 0;
+          return;
+        }
+      } catch (e) {
+        console.warn('[FloatingAccountBtn] status check failed:', e);
+      }
+
+      setAccount(acc);
+      setTimeout(() => setVisible(true), 300);
+
+      // Fetch total actual de la cuenta
+      try {
+        const { data: items } = await supabasePos
+          .from('pos_account_items')
+          .select('unit_price, quantity')
+          .eq('account_id', acc.accountId);
+        const newTotal = (items ?? []).reduce((s, it) => s + (it.unit_price * it.quantity), 0);
+        const newQty = (items ?? []).reduce((s, it) => s + it.quantity, 0);
+        setTotal(newTotal);
+        setTotalQty(newQty);
+        // Pulse anim si el total cambió
+        if (newTotal !== prevTotal.current && prevTotal.current > 0) {
+          setTotalPulse(true);
+          setTimeout(() => setTotalPulse(false), 800);
+        }
+        prevTotal.current = newTotal;
+        prevQty.current = newQty;
+      } catch (e) {
+        console.warn('[FloatingAccountBtn] fetch total failed:', e);
       }
     };
     check();
@@ -65,12 +90,15 @@ export default function FloatingAccountButton() {
   return (
     <Link
       to={`/cuenta?id=${account.accountId}`}
-      className={`fixed bottom-6 z-[60] flex items-center transition-all active:scale-95 group ${
+      className={`fixed z-[100] flex items-center transition-all active:scale-95 group ${
         isLoyaltyPage
           ? 'left-1/2 -translate-x-1/2 bg-gray-900 hover:bg-gray-800 border border-amber-500/60 hover:border-amber-400 text-white px-5 py-3.5 rounded-full shadow-2xl'
           : 'left-4 bg-gray-900 hover:bg-gray-800 border border-amber-500/50 hover:border-amber-400 text-white px-4 py-3 rounded-full shadow-2xl'
       }`}
-      style={{ filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.45))' }}
+      style={{
+        filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.45))',
+        bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+      }}
     >
       {/* Badge animado de pulso */}
       <div className="relative flex-shrink-0 mr-1">

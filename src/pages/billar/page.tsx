@@ -1,85 +1,40 @@
 import { Link } from "react-router-dom";
-import { usePageSEO } from "@/hooks/usePageSEO";
-import { SITE_URL } from "@/lib/site-url";
+import { useEffect } from "react";
+import JsonLd from "@/components/JsonLd";
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
 
+const BILLAR_JSONLD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://barlacabrona.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Billar", "item": "https://barlacabrona.com/billar" }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://barlacabrona.com/billar",
+      "name": "Billar Profesional en La Cabrona | Reglamento y Tarifas en Zapopan, Jalisco",
+      "description": "2 mesas de billar profesionales en La Cabrona Alitas & Beer. Tarifas desde $40 la media hora. Reglamento, costos por daño y consejos para disfrutar tu partida en Zapopan. INE vigente requerida.",
+      "url": "https://barlacabrona.com/billar",
+      "isPartOf": { "@id": "https://barlacabrona.com/" },
+      "about": { "@id": "https://barlacabrona.com/#business" },
+      "inLanguage": "es"
+    }
+  ]
+};
+
 export default function BillarPage() {
-  usePageSEO({
-    title: "Reglamento de Billar | La Cabrona Alitas & Beer Zapopan",
-    description: "Conoce el reglamento de billar de La Cabrona en Zapopan: reglas de conducta, tarifas de renta desde $40 la media hora, costos por daño al equipo y requisitos de identificación INE vigente.",
-    canonicalUrl: `${SITE_URL}/billar`,
-    ogImage: LOGO_URL,
-    keywords: "billar Zapopan, renta billar El Mante, mesas de billar Zapopan, reglamento billar bar",
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Reglamento de Billar", "item": `${SITE_URL}/billar` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "@id": `${SITE_URL}/billar`,
-        "url": `${SITE_URL}/billar`,
-        "name": "Reglamento de Billar | La Cabrona Alitas & Beer Zapopan",
-        "description": "Reglamento de uso de mesas de billar en La Cabrona Bar Zapopan. Tarifas desde $40/media hora. Se requiere INE vigente.",
-        "isPartOf": { "@id": `${SITE_URL}/#website` }
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "¿Cuánto cuesta rentar una mesa de billar en La Cabrona Zapopan?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Las tarifas de renta de billar en La Cabrona Alitas & Beer son: $40 pesos por media hora, $70 pesos por una hora, $110 pesos por hora y media, y $140 pesos por dos horas. El tiempo comienza a correr desde la entrega del equipo."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Qué se necesita para rentar una mesa de billar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Se requiere presentar identificación INE vigente. Debes declarar las personas que jugarán en esa mesa. El máximo es de 6 personas por mesa. No se colocan bebidas ni alimentos sobre la mesa."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cuántas mesas de billar tiene La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "La Cabrona Alitas & Beer cuenta con 2 mesas de billar profesionales en excelentes condiciones. Están disponibles durante todo el horario de apertura en Calle Sinaloa 690, Colonia El Mante, Zapopan, Jalisco."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Qué pasa si daño el equipo de billar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Cualquier daño o pérdida de equipo debe cubrirse de inmediato. Costos: triángulo $159, bola negra $200, bola blanca $200, bola de color $100 c/u, taco de billar $500 c/u."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Se puede reservar mesa de billar por teléfono?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No, las mesas de billar se asignan únicamente en la barra del establecimiento de forma presencial. No se aceptan reservaciones por teléfono, WhatsApp o internet."
-            }
-          }
-        ]
-      }
-    ],
-  });
+  useEffect(() => {
+    document.title = 'Billar Profesional en La Cabrona | Reglamento y Tarifas — Zapopan, Jalisco';
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#faf8f5]">
+      <JsonLd data={BILLAR_JSONLD} />
       {/* Header */}
       <div className="bg-amber-900 text-white">
         <div className="max-w-3xl mx-auto px-4 py-10 text-center">

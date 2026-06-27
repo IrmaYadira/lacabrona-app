@@ -99,6 +99,10 @@ export default function OpenAccountsView() {
   const [search, setSearch] = useState('');
   const [closingAccount, setClosingAccount] = useState<Account | null>(null);
   const [cancellingAccount, setCancellingAccount] = useState<Account | null>(null);
+  const [addToRondaAccount, setAddToRondaAccount] = useState<Account | null>(null);
+  const [addToRondaFolio, setAddToRondaFolio] = useState<number>(0);
+  const [deleteRondaConfirm, setDeleteRondaConfirm] = useState<{accountId: number; folio: number} | null>(null);
+  const [deletingRonda, setDeletingRonda] = useState(false);
   const [sortByPending, setSortByPending] = useState(false);
   const [, setTick] = useState(0);
   const [readyToCloseOnly, setReadyToCloseOnly] = useState(false);
@@ -135,8 +139,8 @@ export default function OpenAccountsView() {
         osc.start(ctx.currentTime + i * 0.15);
         osc.stop(ctx.currentTime + i * 0.15 + 0.5);
       });
-    } catch {
-      // Audio not available
+    } catch (e) {
+      console.warn('[OpenAccounts] playCompletionSound failed:', e);
     }
   }, []);
 
@@ -177,6 +181,30 @@ export default function OpenAccountsView() {
       }, 2500);
     } finally {
       setReopeningId(null);
+    }
+  };
+
+  const handleDeleteRonda = async (accountId: number, folio: number) => {
+    setDeletingRonda(true);
+    try {
+      const { error } = await supabasePos
+        .from('pos_account_items')
+        .delete()
+        .eq('account_id', accountId)
+        .eq('folio_number', folio);
+      if (error) throw error;
+      await supabasePos.from('pos_account_events').insert({
+        account_id: accountId,
+        event_type: 'ronda_deleted',
+        description: `Admin: Ronda #${String(folio).padStart(2, '0')} eliminada`,
+        metadata: { folio_number: folio, deleted_by: 'admin', deleted_at: new Date().toISOString() },
+      });
+      setDeleteRondaConfirm(null);
+      fetchAccounts();
+    } catch (err) {
+      console.error('Error deleting ronda:', err);
+    } finally {
+      setDeletingRonda(false);
     }
   };
 
@@ -352,10 +380,10 @@ export default function OpenAccountsView() {
         <div className="bg-gray-950 rounded-xl px-4 py-3 relative overflow-hidden col-span-1">
           <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">En Consumo Ahora</p>
-          <p className="text-3xl font-black text-amber-400">${totalInBar.toFixed(2)}</p>
+          <p className="text-3xl font-black text-amber-400">MXN${totalInBar.toFixed(2)}</p>
           {accounts.length > 0 && (
             <p className="text-xs text-amber-600 font-semibold mt-0.5">
-              Promedio ${accounts.length > 0 ? (totalInBar / accounts.length).toFixed(2) : '0.00'}/mesa
+              Promedio MXN${accounts.length > 0 ? (totalInBar / accounts.length).toFixed(2) : '0.00'}/mesa
             </p>
           )}
         </div>
@@ -522,7 +550,7 @@ export default function OpenAccountsView() {
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-xs font-black text-amber-600 w-16 text-right flex-shrink-0">${accTotal.toFixed(2)}</span>
+                    <span className="text-xs font-black text-amber-600 w-16 text-right flex-shrink-0">MXN${accTotal.toFixed(2)}</span>
                     <span className="text-xs text-gray-400 w-8 text-right flex-shrink-0">{Math.round(pct)}%</span>
                   </div>
                 );
@@ -665,7 +693,7 @@ export default function OpenAccountsView() {
                         {(acc.pos_account_items ?? []).reduce((s, i) => s + i.quantity, 0)} productos
                       </p>
                     </div>
-                    <p className="font-bold text-amber-600 text-sm flex-shrink-0">${total.toFixed(2)}</p>
+                    <p className="font-bold text-amber-600 text-sm flex-shrink-0">MXN${total.toFixed(2)}</p>
                     {reopenDoneId === acc.id ? (
                       <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-lg flex items-center gap-1 whitespace-nowrap">
                         <i className="ri-checkbox-circle-fill" />Reabierta
@@ -840,7 +868,7 @@ export default function OpenAccountsView() {
 
                 {/* Total */}
                 <div className="text-right flex-shrink-0 mr-2">
-                  <p className="text-base font-black text-amber-600">${total.toFixed(2)}</p>
+                  <p className="text-base font-black text-amber-600">MXN${total.toFixed(2)}</p>
                   <p className="text-xs text-gray-400">{items.reduce((s, i) => s + i.quantity, 0)} items</p>
                 </div>
 
@@ -912,9 +940,45 @@ export default function OpenAccountsView() {
                                 )}
                                 {isLast && !allDelivered && <span className="text-xs text-amber-600 font-semibold">Última</span>}
                               </div>
-                              <span className={`text-sm font-bold ${allDelivered ? 'text-green-600' : isLast ? 'text-amber-600' : 'text-gray-600'}`}>
-                                ${folioTotal.toFixed(2)}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                {/* Agregar producto a esta ronda */}
+                                <button
+                                  onClick={e => { e.stopPropagation(); setAddToRondaAccount(account); setAddToRondaFolio(folio); }}
+                                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-green-100 hover:bg-green-200 text-green-600 cursor-pointer transition-colors"
+                                  title={`Agregar productos a Ronda #${String(folio).padStart(2, '0')}`}
+                                >
+                                  <i className="ri-add-line text-sm" />
+                                </button>
+                                {/* Eliminar ronda */}
+                                {deleteRondaConfirm?.accountId === account.id && deleteRondaConfirm?.folio === folio ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={e => { e.stopPropagation(); setDeleteRondaConfirm(null); }}
+                                      className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-100 cursor-pointer whitespace-nowrap"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); handleDeleteRonda(account.id, folio); }}
+                                      disabled={deletingRonda}
+                                      className="text-xs px-2 py-1 rounded-md bg-red-500 hover:bg-red-600 text-white font-bold cursor-pointer whitespace-nowrap disabled:opacity-60"
+                                    >
+                                      {deletingRonda ? '...' : 'Sí, eliminar'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={e => { e.stopPropagation(); setDeleteRondaConfirm({ accountId: account.id, folio }); }}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 cursor-pointer transition-colors"
+                                    title={`Eliminar Ronda #${String(folio).padStart(2, '0')}`}
+                                  >
+                                    <i className="ri-delete-bin-line text-sm" />
+                                  </button>
+                                )}
+                                <span className={`text-sm font-bold ${allDelivered ? 'text-green-600' : isLast ? 'text-amber-600' : 'text-gray-600'}`}>
+                                  MXN${folioTotal.toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                             <div className="divide-y divide-gray-50">
                               {folioItems.map(item => (
@@ -941,7 +1005,7 @@ export default function OpenAccountsView() {
                                     )}
                                   </div>
                                   <p className="text-xs font-bold text-gray-800 ml-2 flex-shrink-0">
-                                    ${(item.unit_price * item.quantity).toFixed(2)}
+                                    MXN${(item.unit_price * item.quantity).toFixed(2)}
                                   </p>
                                 </div>
                               ))}
@@ -959,7 +1023,7 @@ export default function OpenAccountsView() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-400 uppercase">Total cuenta</p>
-                          <p className="text-lg font-black text-amber-400">${total.toFixed(2)}</p>
+                          <p className="text-lg font-black text-amber-400">MXN${total.toFixed(2)}</p>
                         </div>
                       </div>
 
@@ -986,7 +1050,7 @@ export default function OpenAccountsView() {
                           className="flex-1 flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl text-sm font-bold cursor-pointer transition-colors whitespace-nowrap"
                         >
                           <i className="ri-close-circle-line text-base" />
-                          Cerrar Cuenta · ${total.toFixed(2)}
+                          Cerrar Cuenta · MXN${total.toFixed(2)}
                         </button>
                       </div>
                     </div>
@@ -1023,6 +1087,23 @@ export default function OpenAccountsView() {
           onClose={() => setCancellingAccount(null)}
           onCancelled={() => {
             setCancellingAccount(null);
+            fetchAccounts();
+          }}
+        />
+      )}
+
+      {/* Modal de agregar productos a una ronda específica */}
+      {addToRondaAccount && (
+        <AdminCancelItemModal
+          accountId={addToRondaAccount.id}
+          spot={addToRondaAccount.spot}
+          items={addToRondaAccount.pos_account_items ?? []}
+          initialTab="agregar"
+          targetFolio={addToRondaFolio}
+          onClose={() => { setAddToRondaAccount(null); setAddToRondaFolio(0); }}
+          onCancelled={() => {
+            setAddToRondaAccount(null);
+            setAddToRondaFolio(0);
             fetchAccounts();
           }}
         />

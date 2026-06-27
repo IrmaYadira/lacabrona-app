@@ -147,7 +147,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Ventas Totales"
-          value={`$${stats.totalRevenue.toFixed(2)}`}
+          value={`MXN$${stats.totalRevenue.toFixed(2)}`}
           icon="ri-money-dollar-circle-line"
           color="bg-amber-500"
           sub={`${stats.closedCount} cuentas cerradas ${rangeLabel}`}
@@ -155,7 +155,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
         />
         <KpiCard
           label="Ticket Promedio"
-          value={`$${stats.avgTicket.toFixed(2)}`}
+          value={`MXN$${stats.avgTicket.toFixed(2)}`}
           icon="ri-receipt-line"
           color="bg-green-500"
           sub="Por cuenta cerrada"
@@ -187,7 +187,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-400 uppercase tracking-wide">Venta Total</p>
-              <p className="text-2xl font-black text-amber-600">${grandTotalFromPayments.toFixed(2)}</p>
+              <p className="text-2xl font-black text-amber-600">MXN${grandTotalFromPayments.toFixed(2)}</p>
             </div>
           </div>
           <div className="p-5 space-y-4">
@@ -202,7 +202,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
                       <i className={`${icon} text-lg`} />
                       <span className="text-xs font-bold uppercase tracking-wide">{label}</span>
                     </div>
-                    <p className="text-xl font-black">${amount.toFixed(2)}</p>
+                    <p className="text-xl font-black">MXN${amount.toFixed(2)}</p>
                     <div className="mt-2">
                       <div className="h-1.5 bg-black/10 rounded-full overflow-hidden">
                         <div className="h-full bg-current opacity-50 rounded-full" style={{ width: `${pct}%` }} />
@@ -220,21 +220,21 @@ export default function DayStats({ dateRange }: DayStatsProps) {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal consumos (antes de comisiones)</span>
-                  <span className="font-semibold text-gray-900">${subtotalConsumos.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">MXN${subtotalConsumos.toFixed(2)}</span>
                 </div>
                 {totalCardFees > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Comisiones terminal bancaria (3%)</span>
-                    <span className="font-semibold text-amber-600">+${totalCardFees.toFixed(2)}</span>
+                    <span className="font-semibold text-amber-600">+ MXN${totalCardFees.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold pt-2 border-t border-gray-200">
                   <span className="text-gray-800">Total cobrado a clientes</span>
-                  <span className="text-gray-900">${grandTotalFromPayments.toFixed(2)}</span>
+                  <span className="text-gray-900">MXN${grandTotalFromPayments.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-bold">
                   <span className="text-gray-800">Suma métodos de pago</span>
-                  <span className="text-gray-900">${grandTotalFromPayments.toFixed(2)}</span>
+                  <span className="text-gray-900">MXN${grandTotalFromPayments.toFixed(2)}</span>
                 </div>
                 <div className={`flex justify-between font-bold pt-2 border-t border-gray-200 rounded-lg px-3 py-2 ${
                   Math.abs(grandTotalFromPayments - subtotalConsumos - totalCardFees) < 0.01
@@ -248,7 +248,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
                   <span>{
                     Math.abs(grandTotalFromPayments - subtotalConsumos - totalCardFees) < 0.01
                       ? '✓ $0.00'
-                      : `$${(grandTotalFromPayments - subtotalConsumos - totalCardFees).toFixed(2)}`
+                      : `MXN$${(grandTotalFromPayments - subtotalConsumos - totalCardFees).toFixed(2)}`
                   }</span>
                 </div>
               </div>
@@ -291,7 +291,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
                         {acc.folio_counter} ronda{acc.folio_counter !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <span className="text-base font-black text-gray-900">${accTotal.toFixed(2)}</span>
+                    <span className="text-base font-black text-gray-900">MXN${accTotal.toFixed(2)}</span>
                   </div>
                 </div>
               );
@@ -342,7 +342,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
             <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50">
               <div className="px-4 py-3 border-r border-gray-100">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">Total vendido</p>
-                <p className="text-lg font-black text-amber-600">${stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-lg font-black text-amber-600">MXN${stats.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="px-4 py-3 border-r border-gray-100">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">Cuentas</p>
@@ -350,7 +350,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
               </div>
               <div className="px-4 py-3">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">Prom. ticket</p>
-                <p className="text-lg font-black text-green-600">${stats.avgTicket.toFixed(2)}</p>
+                <p className="text-lg font-black text-green-600">MXN${stats.avgTicket.toFixed(2)}</p>
               </div>
             </div>
 
@@ -401,7 +401,7 @@ export default function DayStats({ dateRange }: DayStatsProps) {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="font-black text-gray-900">${sale.total.toFixed(2)}</span>
+                        <span className="font-black text-gray-900">MXN${sale.total.toFixed(2)}</span>
                       </td>
                       <td className="px-4 py-3 text-right hidden sm:table-cell">
                         <span className="text-xs text-gray-400">

@@ -8,30 +8,39 @@ interface PreparadoModalProps {
   item: CartItem;
   baseName: string;
   basePrice: number;
-  doublePrice: number;
+  showPrice: number;
   onClose: () => void;
 }
+
+type SizeOption = "simple" | "doble" | "litro";
 
 export default function PreparadoModal({
   item,
   baseName,
   basePrice,
-  doublePrice,
+  showPrice,
   onClose,
 }: PreparadoModalProps) {
-  const [isDouble, setIsDouble] = useState(false);
+  const [size, setSize] = useState<SizeOption>("simple");
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState("");
 
   const { addItem, setIsOpen } = useCart();
 
-  const currentPrice = isDouble ? doublePrice : basePrice;
+  const doublePrice = basePrice * 2;
+  const litroPrice = basePrice * 3;
+  const currentPrice = size === "doble" ? doublePrice : size === "litro" ? litroPrice : basePrice;
   const { discountedPrice: currentDiscountedPrice } = useFlashPrice(item.name, "Preparados", currentPrice);
-  const ml = isDouble ? "60ml" : "30ml";
-  const doubleLabel = `${ml} de ${baseName}`;
+
+  const mlLabel = size === "doble" ? "60ml" : size === "litro" ? "90ml" : "30ml";
+  const sizeLabel = size === "doble"
+    ? `60ml de ${baseName} (doble)`
+    : size === "litro"
+    ? `90ml de ${baseName} (litro)`
+    : `30ml de ${baseName}`;
 
   const handleAdd = () => {
-    let finalNotes = doubleLabel;
+    let finalNotes = sizeLabel;
     if (notes.trim()) {
       finalNotes += ` — ${notes.trim()}`;
     }
@@ -47,6 +56,11 @@ export default function PreparadoModal({
     setIsOpen(true);
     onClose();
   };
+
+  const selectedBorder = (s: SizeOption) =>
+    size === s
+      ? "border-amber-500 bg-amber-50 text-amber-700"
+      : "border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-600";
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
@@ -78,7 +92,11 @@ export default function PreparadoModal({
                   {item.name}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {isDouble ? item.description.replace("30ml", "60ml (doble)") : item.description}
+                  {size === "doble"
+                    ? item.description.replace("30ml", "60ml (doble)")
+                    : size === "litro"
+                    ? item.description.replace("30ml", "90ml (litro)")
+                    : item.description}
                 </p>
                 <FlashPrice
                   price={currentPrice}
@@ -92,24 +110,20 @@ export default function PreparadoModal({
             </div>
           </div>
 
-          {/* Selector Simple / Doble */}
+          {/* Selector Simple / Doble / Litro */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               <i className="ri-restaurant-line mr-1 text-amber-500" />
               Tamaño
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <button
-                onClick={() => setIsDouble(false)}
-                className={`p-4 rounded-lg border-2 text-center transition-all cursor-pointer ${
-                  !isDouble
-                    ? "border-amber-500 bg-amber-50 text-amber-700"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-600"
-                }`}
+                onClick={() => setSize("simple")}
+                className={`p-3 rounded-lg border-2 text-center transition-all cursor-pointer ${selectedBorder("simple")}`}
               >
-                <div className="text-lg font-bold">Simple</div>
-                <div className="text-xs mt-1">30ml + refresco + hielo</div>
-                <div className="text-sm font-bold mt-1 text-amber-600">
+                <div className="text-sm font-bold">Simple</div>
+                <div className="text-[10px] mt-0.5">30ml</div>
+                <div className="text-xs font-bold mt-0.5 text-amber-600">
                   <FlashPrice
                     price={basePrice}
                     productName={item.name}
@@ -120,23 +134,23 @@ export default function PreparadoModal({
                 </div>
               </button>
               <button
-                onClick={() => setIsDouble(true)}
-                className={`p-4 rounded-lg border-2 text-center transition-all cursor-pointer ${
-                  isDouble
-                    ? "border-amber-500 bg-amber-50 text-amber-700"
-                    : "border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-600"
-                }`}
+                onClick={() => setSize("doble")}
+                className={`p-3 rounded-lg border-2 text-center transition-all cursor-pointer ${selectedBorder("doble")}`}
               >
-                <div className="text-lg font-bold">Doble</div>
-                <div className="text-xs mt-1">60ml + refresco + hielo</div>
-                <div className="text-sm font-bold mt-1 text-amber-600">
-                  <FlashPrice
-                    price={doublePrice}
-                    productName={item.name}
-                    category="Preparados"
-                    variant="light"
-                    size="sm"
-                  />
+                <div className="text-sm font-bold">Doble</div>
+                <div className="text-[10px] mt-0.5">60ml</div>
+                <div className="text-xs font-bold mt-0.5 text-amber-600">
+                  ${doublePrice}
+                </div>
+              </button>
+              <button
+                onClick={() => setSize("litro")}
+                className={`p-3 rounded-lg border-2 text-center transition-all cursor-pointer ${selectedBorder("litro")}`}
+              >
+                <div className="text-sm font-bold">Litro</div>
+                <div className="text-[10px] mt-0.5">90ml</div>
+                <div className="text-xs font-bold mt-0.5 text-amber-600">
+                  ${litroPrice}
                 </div>
               </button>
             </div>

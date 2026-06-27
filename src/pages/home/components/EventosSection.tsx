@@ -174,7 +174,7 @@ export default function EventosSection() {
                         {DIAS_CORTO[promo.dia_semana]}
                       </span>
                       {isToday && (
-                        <span className={`text-[8px] font-black uppercase tracking-wider ${isActive ? "text-white/80" : "text-amber-400"}`}>
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${isActive ? "text-white/80" : "text-amber-400"}`}>
                           HOY
                         </span>
                       )}

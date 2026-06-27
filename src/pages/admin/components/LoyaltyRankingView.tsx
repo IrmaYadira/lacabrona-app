@@ -1552,7 +1552,7 @@ export default function LoyaltyRankingView() {
 
                   {/* Gastado */}
                   <div className="col-span-2 text-right">
-                    <p className="text-sm font-bold text-green-400">${Math.round(cust.total_spent)}</p>
+                    <p className="text-sm font-bold text-green-400">MXN${Math.round(cust.total_spent)}</p>
                   </div>
 
                   {/* Acciones */}

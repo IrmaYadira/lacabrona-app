@@ -53,8 +53,8 @@ export default function QuickSaleCart({ items, onUpdateQty, onRemove }: QuickSal
 
             {/* Price */}
             <div className="text-right flex-shrink-0">
-              <p className="text-sm font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
-              {item.quantity > 1 && <p className="text-xs text-gray-400">${item.price.toFixed(2)} c/u</p>}
+              <p className="text-sm font-bold text-gray-900">MXN${(item.price * item.quantity).toFixed(2)}</p>
+              {item.quantity > 1 && <p className="text-xs text-gray-400">MXN${item.price.toFixed(2)} c/u</p>}
             </div>
           </div>
         ))}
@@ -68,7 +68,7 @@ export default function QuickSaleCart({ items, onUpdateQty, onRemove }: QuickSal
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-400 uppercase tracking-wide">Total</p>
-            <p className="text-2xl font-black text-amber-600">${total.toFixed(2)}</p>
+            <p className="text-2xl font-black text-amber-600">MXN${total.toFixed(2)}</p>
           </div>
         </div>
       </div>

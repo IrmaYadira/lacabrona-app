@@ -323,7 +323,7 @@ export default function LoyaltyRewardsManager() {
                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                       <span>Orden: {reward.tier_order}</span>
                       <span>·</span>
-                      <span>${reward.pesos_equivalent} pesos eq.</span>
+                      <span>MXN${reward.pesos_equivalent} pesos eq.</span>
                     </div>
                   </div>
 

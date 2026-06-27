@@ -142,34 +142,9 @@ if (typeof window !== "undefined") {
     }
   };
 
-  // Interceptar console.error
-  const origConsoleError = console.error;
-  console.error = (...args: unknown[]) => {
-    const msg = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
-    // Evitar loops infinitos: no loggear si ya viene del addDebugLog
-    if (!msg.includes("[DEBUG ERROR]")) {
-      // Detectar si es un error de Supabase
-      const isSupabase = msg.includes("supabase") || msg.includes("@supabase") || msg.includes("Postgrest");
-      addDebugLog(
-        isSupabase ? "supabase" : "error",
-        msg.slice(0, 200),
-        msg.slice(200, 500)
-      );
-    }
-    origConsoleError.apply(console, args);
-  };
-
-  const origConsoleWarn = console.warn;
-  console.warn = (...args: unknown[]) => {
-    const msg = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
-    if (!msg.includes("[DEBUG WARN]")) {
-      const isSupabase = msg.includes("supabase") || msg.includes("@supabase") || msg.includes("Postgrest");
-      addDebugLog(
-        isSupabase ? "supabase" : "warn",
-        msg.slice(0, 200),
-        msg.slice(200, 500)
-      );
-    }
-    origConsoleWarn.apply(console, args);
-  };
+  // ── NO interceptar console.error ni console.warn ──
+  // Estos eran demasiado agresivos y capturaban ruido interno de
+  // Supabase, React y otras librerías, mostrando toasts innecesarios.
+  // Los errores de JS reales los capturan window.onerror y
+  // window.onunhandledrejection arriba.
 }

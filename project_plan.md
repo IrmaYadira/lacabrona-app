@@ -184,7 +184,7 @@ Target: Clientes locales de Zapopan y Guadalajara que buscan un bar de alitas co
 ### 3.11 SEO & Performance
 - [x] robots.txt bloqueando páginas internas
 - [x] Sitemap con URLs indexables
-- [x] Meta tags dinámicos (usePageSEO hook)
+- [x] Meta tags estáticos en index.html (fuente de verdad para head)
 - [x] JSON-LD estructurado (BarOrPub, FAQPage, Event, AggregateRating, BreadcrumbList)
 - [x] Geo tags para SEO local (Zapopan, Jalisco)
 - [x] Open Graph y Twitter Card
@@ -307,7 +307,7 @@ Target: Clientes locales de Zapopan y Guadalajara que buscan un bar de alitas co
 
 ### Mejoras pendientes
 - [ ] `/cuenta/page.tsx` tiene ~2100 líneas — debería dividirse en componentes más pequeños
-- [ ] `/bienvenida` y `/cuenta` usan manipulación directa del DOM para SEO en vez de `usePageSEO`
+- [ ] `/bienvenida` y `/cuenta` usan manipulación directa del DOM para SEO — evaluar si es necesario
 - [ ] Actualizar `project_plan.md` periódicamente cuando se agreguen features nuevos
 
 ### Salud del proyecto

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu,
+  wingsMenu, bonelessMenu, beerMenu, halfBeersMenu, pacificoBeersMenu, caguamasMenu,
   ampolletasMenu, nonAlcoholicBeersMenu, micheladaMenu, micheladaConCamaronMenu,
   sidesMenu, hotDogsMenu, burgersMenu, comboMenu, sodasMenu,
   cannedAlcoholicMenu, shotShowsMenu, vasosPreparadosMenu, azulitosMenu, preparadosMenu,
@@ -52,6 +52,7 @@ function buildCategories(): Category[] {
       ]
     },
     { label: 'Pacífico', icon: 'ri-goblet-line', items: pacificoBeersMenu.map(i => ({ id: `pac-${i.id}`, name: i.name, price: i.price })) },
+    { label: 'Caguamas', icon: 'ri-goblet-fill', items: caguamasMenu.map(i => ({ id: `cag-${i.id}`, name: i.name, price: i.price })) },
     { label: 'Ampolletas', icon: 'ri-goblet-line', items: ampolletasMenu.map(i => ({ id: `amp-${i.id}`, name: i.name, price: i.price })) },
     { label: 'Sin Alcohol', icon: 'ri-leaf-line', items: nonAlcoholicBeersMenu.map(i => ({ id: `na-${i.id}`, name: i.name, price: i.price })) },
     {
@@ -60,11 +61,15 @@ function buildCategories(): Category[] {
         { id: String(micheladaConCamaronMenu.id), name: micheladaConCamaronMenu.name, price: micheladaConCamaronMenu.price },
       ]
     },
-    { label: 'Shots', icon: 'ri-flask-line', items: shotShowsMenu.map(i => ({ id: `shot-${i.id}`, name: i.name, price: i.price })) },
+    { label: 'Shots', icon: 'ri-flask-line', items: shotShowsMenu.flatMap(i => [
+      { id: `shot-${i.id}-sencillo`, name: `${i.name} (Sencillo)`, price: i.price },
+      { id: `shot-${i.id}-doble`, name: `${i.name} (Doble)`, price: i.price * 2 },
+    ]) },
     {
       label: 'Preparados', icon: 'ri-cup-fill', items: preparadosMenu.flatMap(i => [
         { id: `prep-${i.id}-sencillo`, name: `${i.name} (Sencillo)`, price: i.basePrice },
-        { id: `prep-${i.id}-doble`, name: `${i.name} (Doble)`, price: i.doublePrice },
+        { id: `prep-${i.id}-doble`, name: `${i.name} (Doble)`, price: i.basePrice * 2 },
+        { id: `prep-${i.id}-litro`, name: `${i.name} (Litro)`, price: i.basePrice * 3 },
       ])
     },
     { label: 'Azulitos', icon: 'ri-cup-line', items: azulitosMenu.map(i => ({ id: `azul-${i.id}`, name: i.name, price: i.price })) },

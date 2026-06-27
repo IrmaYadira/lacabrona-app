@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabasePos } from '@/pages/pos/supabasePos';
+import { speakNewOrder, type OrderItemVoice } from '@/lib/orderSpeech';
 
 interface NewOrderEvent {
   id: string;
@@ -15,7 +16,6 @@ function playChime() {
   try {
     const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
 
-    // Compressor para maximizar volumen percibido — se escucha sobre ruido de fondo
     const compressor = ctx.createDynamicsCompressor();
     compressor.threshold.setValueAtTime(-10, ctx.currentTime);
     compressor.knee.setValueAtTime(3, ctx.currentTime);
@@ -24,7 +24,6 @@ function playChime() {
     compressor.release.setValueAtTime(0.1, ctx.currentTime);
     compressor.connect(ctx.destination);
 
-    // Onda cuadrada: más agresiva y cortante que seno, se escucha sobre ruido de fondo
     const playBuzz = (freq: number, startTime: number, duration: number, gain: number) => {
       const osc = ctx.createOscillator();
       const gainNode = ctx.createGain();
@@ -44,18 +43,15 @@ function playChime() {
     const pulse = 0.12;
     const gap = 0.08;
 
-    // Primera ráfaga: BEP-BEP-BEP
     playBuzz(1200, t, pulse, 0.9);
     playBuzz(900, t + pulse + gap, pulse, 0.9);
     playBuzz(1200, t + (pulse + gap) * 2, pulse, 0.9);
 
-    // Pausa + segunda ráfaga
     const offset = (pulse + gap) * 3 + 0.18;
     playBuzz(1200, t + offset, pulse, 0.9);
     playBuzz(900, t + offset + pulse + gap, pulse, 0.9);
     playBuzz(1200, t + offset + (pulse + gap) * 2, pulse, 0.9);
 
-    // Vibración del dispositivo si está disponible
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);
     }
@@ -65,16 +61,28 @@ function playChime() {
 }
 
 interface Props {
-  /** Callback cuando llega nuevo pedido, para actualizar badges del dashboard */
   onNewOrder?: (spot: string) => void;
+}
+
+interface PendingItem {
+  itemId: number;
+  accountId: number;
+  spot: string;
+  area: string;
+  folioNumber: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
 }
 
 export default function LiveOrderNotifier({ onNewOrder }: Props) {
   const [notifications, setNotifications] = useState<NewOrderEvent[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const knownItems = useRef<Set<number>>(new Set());
   const initialized = useRef(false);
+  const pendingBatch = useRef<PendingItem[]>([]);
+  const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -84,7 +92,6 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
     setNotifications([]);
   }, []);
 
-  // Inicializar conocidos sin disparar notificaciones
   const initKnown = useCallback(async () => {
     const { data } = await supabasePos
       .from('pos_account_items')
@@ -95,50 +102,95 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
     initialized.current = true;
   }, []);
 
+  // Agrupa items del mismo pedido web y solo notifica los NUEVOS (batch actual)
+  const flushBatch = useCallback(() => {
+    if (pendingBatch.current.length === 0) return;
+
+    const batch = [...pendingBatch.current];
+    pendingBatch.current = [];
+
+    // Agrupar por accountId
+    const byAccount = new Map<number, PendingItem[]>();
+    batch.forEach(item => {
+      const list = byAccount.get(item.accountId) ?? [];
+      list.push(item);
+      byAccount.set(item.accountId, list);
+    });
+
+    // Crear notificación por cada cuenta con SOLO los items nuevos del batch
+    for (const [accountId, batchItems] of byAccount.entries()) {
+      const first = batchItems[0];
+      const total = batchItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+
+      const recentItems = batchItems.map(i => `${i.quantity}x ${i.productName}`);
+
+      // Solo los items NUEVOS del batch para voz
+      const voiceItems: OrderItemVoice[] = batchItems.map(i => ({
+        name: i.productName,
+        qty: i.quantity,
+      }));
+
+      const notif: NewOrderEvent = {
+        id: `${Date.now()}-${accountId}`,
+        spot: first.spot,
+        area: first.area,
+        folioNumber: first.folioNumber,
+        items: recentItems,
+        total,
+        timestamp: Date.now(),
+      };
+
+      // Beep siempre
+      playChime();
+
+      // Voz: solo los items NUEVOS
+      if (voiceEnabled) {
+        setTimeout(() => speakNewOrder(first.spot, voiceItems, total, false), 700);
+      }
+
+      setNotifications(prev => [...prev.slice(-4), notif]);
+      setMinimized(false);
+      onNewOrder?.(first.spot);
+
+      setTimeout(() => dismiss(notif.id), 12000);
+    }
+  }, [voiceEnabled, dismiss, onNewOrder]);
+
   const handleNewItem = useCallback(async (payload: unknown) => {
     if (!initialized.current) return;
     const record = (payload as { new?: { id?: number; folio_number?: number; product_name?: string; quantity?: number; unit_price?: number; account_id?: number; origin?: string | null } })?.new;
     if (!record?.id || knownItems.current.has(record.id)) return;
 
-    // Solo pedidos web
     if (record.origin !== 'web') return;
 
     knownItems.current.add(record.id);
 
-    // Obtener datos de la cuenta
+    // Obtener el spot de la cuenta
     const { data: acc } = await supabasePos
       .from('pos_accounts')
-      .select('id, spot, area, pos_account_items(product_name, quantity, unit_price)')
+      .select('id, spot, area')
       .eq('id', record.account_id)
       .eq('status', 'open')
       .maybeSingle();
 
     if (!acc) return;
 
-    const items = (acc.pos_account_items ?? []) as { product_name: string; quantity: number; unit_price: number }[];
-    const total = items.reduce((s: number, i: { unit_price: number; quantity: number }) => s + i.unit_price * i.quantity, 0);
-
-    // Solo mostrar items del folio actual (los nuevos)
-    const recentItems = items.slice(-3).map((i: { quantity: number; product_name: string }) => `${i.quantity}x ${i.product_name}`);
-
-    const notif: NewOrderEvent = {
-      id: `${Date.now()}-${record.id}`,
+    // Agregar al batch pendiente (solo el item NUEVO)
+    pendingBatch.current.push({
+      itemId: record.id,
+      accountId: record.account_id ?? 0,
       spot: acc.spot,
       area: acc.area,
       folioNumber: record.folio_number ?? 1,
-      items: recentItems,
-      total,
-      timestamp: Date.now(),
-    };
+      productName: record.product_name ?? 'Producto',
+      quantity: record.quantity ?? 1,
+      unitPrice: record.unit_price ?? 0,
+    });
 
-    if (soundEnabled) playChime();
-    setNotifications(prev => [...prev.slice(-4), notif]);
-    setMinimized(false);
-    onNewOrder?.(acc.spot);
-
-    // Auto-dismiss en 12 segundos
-    setTimeout(() => dismiss(notif.id), 12000);
-  }, [soundEnabled, dismiss, onNewOrder]);
+    // Esperar 600ms para agrupar todos los items del mismo pedido
+    if (batchTimer.current) clearTimeout(batchTimer.current);
+    batchTimer.current = setTimeout(flushBatch, 600);
+  }, [voiceEnabled, dismiss, onNewOrder, flushBatch]);
 
   useEffect(() => {
     initKnown();
@@ -152,7 +204,6 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
         }
       });
 
-    // Fallback polling: revisar nuevos items cada 5 segundos si realtime falla
     const pollInterval = setInterval(async () => {
       if (!initialized.current) return;
       const { data } = await supabasePos
@@ -180,16 +231,16 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
     return (
       <div className="fixed bottom-5 right-5 z-50">
         <button
-          onClick={() => setSoundEnabled(p => !p)}
-          title={soundEnabled ? 'Silenciar alertas de pedidos web' : 'Activar alertas de pedidos web'}
+          onClick={() => setVoiceEnabled(p => !p)}
+          title={voiceEnabled ? 'Silenciar voz de pedidos' : 'Activar voz de pedidos'}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-full border transition-all cursor-pointer text-xs font-semibold whitespace-nowrap ${
-            soundEnabled
+            voiceEnabled
               ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
               : 'bg-gray-100 border-gray-200 text-gray-400 hover:bg-gray-200'
           }`}
         >
-          <i className={soundEnabled ? 'ri-notification-3-line' : 'ri-notification-off-line'} />
-          {soundEnabled ? 'Alerta Web ON' : 'Alerta Web OFF'}
+          <i className={voiceEnabled ? 'ri-volume-up-line' : 'ri-volume-mute-line'} />
+          {voiceEnabled ? 'Voz ON' : 'Voz OFF'}
         </button>
       </div>
     );
@@ -197,16 +248,15 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
 
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 items-end" style={{ maxWidth: 340 }}>
-      {/* Controls row */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setSoundEnabled(p => !p)}
+          onClick={() => setVoiceEnabled(p => !p)}
           className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-all whitespace-nowrap ${
-            soundEnabled ? 'bg-amber-50 border-amber-300 text-amber-600' : 'bg-gray-100 border-gray-200 text-gray-400'
+            voiceEnabled ? 'bg-amber-50 border-amber-300 text-amber-600' : 'bg-gray-100 border-gray-200 text-gray-400'
           }`}
         >
-          <i className={soundEnabled ? 'ri-volume-up-line' : 'ri-volume-mute-line'} />
-          {soundEnabled ? 'Sonido' : 'Silencio'}
+          <i className={voiceEnabled ? 'ri-volume-up-line' : 'ri-volume-mute-line'} />
+          {voiceEnabled ? 'Voz' : 'Silencio'}
         </button>
         <button
           onClick={() => setMinimized(p => !p)}
@@ -225,14 +275,12 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
         )}
       </div>
 
-      {/* Notification cards */}
       {!minimized && notifications.map(notif => (
         <div
           key={notif.id}
           className="w-full bg-gray-950 border border-amber-500 rounded-2xl overflow-hidden"
           style={{ animation: 'slideInRight 0.3s ease-out' }}
         >
-          {/* Header */}
           <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-2">
             <div className="relative flex-shrink-0">
               <div className="w-9 h-9 flex items-center justify-center bg-amber-500 rounded-xl">
@@ -246,7 +294,7 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
                 Nuevo pedido — {notif.spot}
               </p>
               <p className="text-amber-400 text-xs font-semibold">
-                Ronda #{String(notif.folioNumber).padStart(2, '0')} · ${notif.total.toFixed(2)} total
+                Ronda #{String(notif.folioNumber).padStart(2, '0')} · MXN${notif.total.toFixed(2)} total
               </p>
             </div>
             <button
@@ -257,7 +305,6 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
             </button>
           </div>
 
-          {/* Items */}
           {notif.items.length > 0 && (
             <div className="px-4 pb-2">
               {notif.items.map((item, idx) => (
@@ -269,7 +316,6 @@ export default function LiveOrderNotifier({ onNewOrder }: Props) {
             </div>
           )}
 
-          {/* Footer */}
           <div className="flex items-center justify-between px-4 pb-3.5 pt-1 border-t border-gray-800 mt-1">
             <span className="text-gray-500 text-xs flex items-center gap-1">
               <i className="ri-time-line" />

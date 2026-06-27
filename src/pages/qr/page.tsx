@@ -214,20 +214,6 @@ async function downloadCardAsImage(element: HTMLElement, filename: string) {
 
 export default function QrPage() {
   // Página utilitaria para generar QR, no es contenido de búsqueda
-  useEffect(() => {
-    const existing = document.querySelector('meta[name="robots"]');
-    if (existing) existing.remove();
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, nofollow';
-    document.head.appendChild(meta);
-    const originalTitle = document.title;
-    document.title = 'QR | La Cabrona';
-    return () => {
-      meta.remove();
-      document.title = originalTitle;
-    };
-  }, []);
 
   const [selectedStyle, setSelectedStyle] = useState<CardStyle>('dark');
   const [selectedSize, setSelectedSize] = useState<QrSize>('medium');

@@ -57,6 +57,7 @@ export default function ShotShowsSection() {
             const outOfStock = isPaused(`shot-${item.id}`);
             const favId = 600 + item.id;
             const fav = isFavorite(favId);
+            const doublePrice = item.price * 2;
             return (
             <ScrollReveal key={item.id} delay={index * 100}>
               <div className={`bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 hover:-translate-y-1 transition-all duration-300 group ${outOfStock ? 'opacity-60' : ''}`}>
@@ -115,13 +116,24 @@ export default function ShotShowsSection() {
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <FlashPrice
-                      price={item.price}
-                      productName={item.name}
-                      category="Shots"
-                      variant="dark"
-                      size="xl"
-                    />
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Simple 30ml</span>
+                        <FlashPrice
+                          price={item.price}
+                          productName={item.name}
+                          category="Shots"
+                          variant="dark"
+                          size="sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Doble 60ml</span>
+                        <span className="text-sm text-white font-bold">
+                          ${doublePrice}
+                        </span>
+                      </div>
+                    </div>
                     {outOfStock ? (
                       <span className="text-xs text-gray-500 font-semibold px-3 py-1.5 rounded-md bg-gray-700 whitespace-nowrap">
                         No disponible

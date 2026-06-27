@@ -468,6 +468,32 @@ export default function PosPanel({ onLogout }: PosPanelProps) {
     };
     if (zona) insertPayload.zona = zona;
 
+    // ── Validación: evitar cuentas duplicadas para el mismo cliente ──
+    if (resolvedCustomerId || phone) {
+      let dupQuery = supabasePos.from('pos_accounts').select('*').eq('status', 'open');
+      if (resolvedCustomerId) {
+        dupQuery = dupQuery.eq('customer_id', resolvedCustomerId);
+      } else if (phone) {
+        dupQuery = dupQuery.eq('customer_phone', phone.trim().replace(/\s/g, ''));
+      }
+      const { data: yaAbierta } = await dupQuery.maybeSingle();
+
+      if (yaAbierta) {
+        // Ya existe — navegar a esa cuenta en vez de duplicar
+        setOpeningAccount(false);
+        setActiveAccountId(yaAbierta.id);
+        setActiveSpotLabel(yaAbierta.customer_name || yaAbierta.spot || 'Cliente');
+        setActiveAreaLabel(
+          yaAbierta.zona
+            ? `${AREA_LABELS[yaAbierta.area as Area] ?? yaAbierta.area} · ${yaAbierta.zona}`
+            : AREA_LABELS[yaAbierta.area as Area] ?? yaAbierta.area
+        );
+        setView('account');
+        fetchAccounts();
+        return;
+      }
+    }
+
     const { data: accData, error: insertError } = await supabasePos
       .from('pos_accounts')
       .insert(insertPayload)
@@ -907,6 +933,9 @@ export default function PosPanel({ onLogout }: PosPanelProps) {
       </div>
 
       {webNotifPanel}
+      <Suspense fallback={null}>
+        <WaiterCallNotifier />
+      </Suspense>
 
       {/* Live summary bar */}
       <div className="bg-gray-800 text-white px-4 py-2 flex items-center justify-between gap-4">
@@ -916,8 +945,8 @@ export default function PosPanel({ onLogout }: PosPanelProps) {
         </div>
         <div className="flex items-center gap-4 flex-1 justify-center flex-wrap">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">Total acumulado</span>
-            <span className="text-sm font-black text-amber-400 tabular-nums">${totalAcumulado.toFixed(2)}</span>
+            <span className="text-xs text-gray-400">Total acumulado (MXN)</span>
+            <span className="text-sm font-black text-amber-400 tabular-nums">MXN$${totalAcumulado.toFixed(2)}</span>
             <span className="text-xs text-gray-500">({cuentasAbiertas} cuenta{cuentasAbiertas !== 1 ? 's' : ''})</span>
           </div>
           {totalItems > 0 && (

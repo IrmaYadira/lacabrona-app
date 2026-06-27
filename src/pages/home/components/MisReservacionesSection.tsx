@@ -96,7 +96,7 @@ function buildModifyRequestMessage(res: Reservation): string {
   return encodeURIComponent(msg);
 }
 
-export default function MisReservacionesSection() {
+export default function MisReservacionesSection({ highlight = false }: { highlight?: boolean }) {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -144,7 +144,7 @@ export default function MisReservacionesSection() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <section id="mis-reservaciones" className="py-14 md:py-20 bg-gray-950">
+    <section id="mis-reservaciones" className={`py-14 md:py-20 bg-gray-950 ${highlight ? 'animate-reservation-highlight' : ''}`}>
       <div className="max-w-3xl mx-auto px-4 md:px-6">
         {/* Encabezado */}
         <div className="text-center mb-10">

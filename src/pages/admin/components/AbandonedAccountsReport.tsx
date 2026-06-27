@@ -240,7 +240,7 @@ export default function AbandonedAccountsReport({ dateRange }: AbandonedAccounts
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Pérdida estimada</p>
-              <p className="text-2xl font-black text-red-600 mt-1">${abandonedRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-black text-red-600 mt-1">MXN${abandonedRevenue.toFixed(2)}</p>
               <p className="text-xs text-gray-400 mt-0.5">
                 {totalRevenue > 0 ? Math.round((abandonedRevenue / totalRevenue) * 100) : 0}% de ventas
               </p>
@@ -378,7 +378,7 @@ export default function AbandonedAccountsReport({ dateRange }: AbandonedAccounts
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-black text-gray-900">${total.toFixed(2)}</p>
+                        <p className="text-lg font-black text-gray-900">MXN${total.toFixed(2)}</p>
                         <p className="text-xs text-gray-400">
                           {items.length} items · {account.folio_counter} ronda{account.folio_counter !== 1 ? 's' : ''}
                         </p>
@@ -430,7 +430,7 @@ export default function AbandonedAccountsReport({ dateRange }: AbandonedAccounts
                             return (
                               <div key={folio} className="bg-gray-50 border border-gray-100 rounded-lg px-2 py-1 text-xs">
                                 <span className="font-bold text-gray-700">Ronda #{String(folio).padStart(2, '0')}</span>
-                                <span className="text-gray-500 ml-1">${folioTotal.toFixed(2)} · {folioQty} items</span>
+                                <span className="text-gray-500 ml-1">MXN${folioTotal.toFixed(2)} · {folioQty} items</span>
                               </div>
                             );
                           })}
@@ -499,7 +499,7 @@ function AccountDetailModal({ account, onClose }: { account: AccountWithItems; o
                   <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
                     Ronda #{String(folio).padStart(2, '0')}
                   </span>
-                  <span className="text-sm font-bold text-amber-700">${folioTotal.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-amber-700">MXN${folioTotal.toFixed(2)}</span>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {folioItems.map(item => (
@@ -509,8 +509,8 @@ function AccountDetailModal({ account, onClose }: { account: AccountWithItems; o
                         {item.size && <p className="text-xs text-amber-600">{item.size}</p>}
                       </div>
                       <div className="text-right flex-shrink-0 ml-3">
-                        <p className="text-sm font-bold text-gray-900">{item.quantity}x ${item.unit_price.toFixed(2)}</p>
-                        <p className="text-xs text-gray-400">${(item.unit_price * item.quantity).toFixed(2)}</p>
+                        <p className="text-sm font-bold text-gray-900">{item.quantity}x MXN${item.unit_price.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">MXN${(item.unit_price * item.quantity).toFixed(2)}</p>
                       </div>
                     </div>
                   ))}
@@ -522,7 +522,7 @@ function AccountDetailModal({ account, onClose }: { account: AccountWithItems; o
           <div className="bg-gray-900 rounded-xl p-4">
             <div className="flex justify-between text-base font-black border-t border-gray-700 pt-2">
               <span className="text-gray-300">TOTAL COBRADO</span>
-              <span className="text-amber-400">${total.toFixed(2)}</span>
+              <span className="text-amber-400">MXN${total.toFixed(2)}</span>
             </div>
           </div>
         </div>

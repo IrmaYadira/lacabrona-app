@@ -1,8 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { usePageSEO } from "@/hooks/usePageSEO";
-import { SITE_URL } from "@/lib/site-url";
 
 const LOGO_URL = "https://storage.readdy-site.link/project_files/b77c803d-575e-40d4-a158-35c12c991a6e/1e56aa27-e144-4e29-bb60-eddac5a8c656_logo-la-cabrona--123.jpg?v=f7c9d62f59fec067f747e7cb302ed285";
 
@@ -77,87 +75,6 @@ export default function RentaPage() {
       a: "Sí, La Cabrona Alitas & Beer es un bar con ambiente familiar. Fomentamos el respeto y la convivencia sana entre todos nuestros clientes. El área de fumadores está designada exclusivamente para tabaco. Nos reservamos el derecho de admisión para preservar el buen ambiente.",
     },
   ];
-
-  usePageSEO({
-    title: "Mesas de Billar Disponibles | La Cabrona Alitas & Beer Zapopan",
-    description: "Consulta la disponibilidad en tiempo real de nuestras mesas de billar en La Cabrona Zapopan. Tarifas desde $40 la media hora hasta $140 por 2 horas. Máximo 6 personas por mesa.",
-    canonicalUrl: `${SITE_URL}/billar/renta`,
-    ogImage: LOGO_URL,
-    keywords: "mesas billar disponibles, renta billar Zapopan, billar El Mante, mesas billar bar",
-    structuredData: [
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          { "@type": "ListItem", "position": 1, "name": "Inicio", "item": `${SITE_URL}/` },
-          { "@type": "ListItem", "position": 2, "name": "Billar", "item": `${SITE_URL}/billar` },
-          { "@type": "ListItem", "position": 3, "name": "Mesas Disponibles", "item": `${SITE_URL}/billar/renta` }
-        ]
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "EntertainmentBusiness",
-        "name": "Billar La Cabrona Alitas & Beer",
-        "description": "Mesas de billar disponibles en La Cabrona Zapopan. Tarifas $40 media hora, $70 hora. Se requiere INE vigente.",
-        "url": `${SITE_URL}/billar/renta`,
-        "containedInPlace": { "@id": `${SITE_URL}/#business` }
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "¿Cómo rentar una mesa de billar en La Cabrona?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Para rentar una mesa de billar en La Cabrona Alitas & Beer, acércate directamente a la barra con tu identificación INE vigente. El personal te asignará la mesa disponible y te entregará el equipo. No se aceptan reservaciones por teléfono ni por internet. El tiempo comienza a correr desde la entrega del equipo completo."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cuánto cuesta rentar una mesa de billar en Zapopan?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Nuestras tarifas de billar son: $40 por media hora, $70 por una hora, $110 por hora y media, y $140 por dos horas. Estas tarifas aplican por mesa y no por persona. El cobro se realiza al finalizar tu sesión de juego."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Cuántas personas pueden jugar en una mesa de billar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Cada mesa de billar tiene un límite máximo de 6 personas. Si vienes en grupo, puedes rotar turnos entre los jugadores. Es importante respetar este límite para mantener el orden y la seguridad en el área de billar."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Se necesita identificación para rentar billar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sí, es obligatorio presentar una identificación INE vigente para rentar una mesa de billar. Esta política nos permite asegurar el cuidado del equipo y garantizar que las personas que rentan sean responsables de cualquier daño o pérdida que pueda ocurrir durante el uso."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿Puedo reservar una mesa de billar por teléfono o WhatsApp?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "No, las mesas de billar no se reservan por teléfono ni por WhatsApp. La asignación de mesas se realiza únicamente en la barra del establecimiento, de forma presencial y en el momento. Recomendamos llegar con tiempo, especialmente los fines de semana cuando la demanda es mayor."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "¿El ambiente de La Cabrona es familiar?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Sí, La Cabrona Alitas & Beer es un bar con ambiente familiar. Fomentamos el respeto y la convivencia sana entre todos nuestros clientes. El área de fumadores está designada exclusivamente para tabaco. Nos reservamos el derecho de admisión para preservar el buen ambiente."
-            }
-          }
-        ]
-      }
-    ],
-  });
 
   useEffect(() => {
     const fetchMesas = async () => {

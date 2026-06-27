@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useCart } from '@/pages/home/context/CartContext';
 import { supabasePos } from '@/pages/pos/supabasePos';
@@ -38,10 +39,15 @@ const DIAS_NOMBRE = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Vier
 const DISMISS_KEY = 'lc_promo_dia_dismissed_v2';
 
 function getDismissedDate(): string {
-  try { return localStorage.getItem(DISMISS_KEY) ?? ''; } catch { return ''; }
+  try { return localStorage.getItem(DISMISS_KEY) ?? ''; } catch (err) {
+    console.warn('[CompactFAB] localStorage getDismissedDate failed:', err);
+    return '';
+  }
 }
 function setDismissedToday(): void {
-  try { localStorage.setItem(DISMISS_KEY, new Date().toDateString()); } catch { /* noop */ }
+  try { localStorage.setItem(DISMISS_KEY, new Date().toDateString()); } catch (err) {
+    console.warn('[CompactFAB] localStorage setDismissedToday failed:', err);
+  }
 }
 
 const LAST_SELFIE_KEY = 'lastWaiterSelfieCompact';
@@ -58,11 +64,16 @@ function getStoredSelfie(): string | null {
       return null;
     }
     return parsed.url;
-  } catch { return null; }
+  } catch (err) {
+    console.warn('[CompactFAB] localStorage getStoredSelfie failed:', err);
+    return null;
+  }
 }
 
 function storeSelfie(url: string) {
-  try { localStorage.setItem(LAST_SELFIE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch { /* noop */ }
+  try { localStorage.setItem(LAST_SELFIE_KEY, JSON.stringify({ url, timestamp: Date.now() })); } catch (err) {
+    console.warn('[CompactFAB] localStorage storeSelfie failed:', err);
+  }
 }
 
 export default function CompactFAB() {
@@ -93,6 +104,7 @@ export default function CompactFAB() {
   const pendingRequestType = useRef<RequestType>('call');
   const lastRequestType = useRef<RequestType>('call');
   const lastErrorMessage = useRef('');
+  const manualSpotRef = useRef<string>('');
 
   // ── Promo del día ──
   const [promo, setPromo] = useState<PromoSemana | null>(null);
@@ -159,17 +171,25 @@ export default function CompactFAB() {
     }
     const todayDia = new Date().getDay();
     const fetchPromo = async () => {
-      const { data } = await supabase
-        .from('promos_semana')
-        .select('*')
-        .eq('dia_semana', todayDia)
-        .eq('activo', true)
-        .is('deleted_at', null)
-        .maybeSingle();
-      if (!data) return;
-      setPromo(data as PromoSemana);
-      const t = setTimeout(() => setPromoVisible(true), 1800);
-      return () => clearTimeout(t);
+      try {
+        const { data, error } = await supabase
+          .from('promos_semana')
+          .select('*')
+          .eq('dia_semana', todayDia)
+          .eq('activo', true)
+          .is('deleted_at', null)
+          .maybeSingle();
+        if (error) {
+          console.warn('[CompactFAB] promos_semana query error:', error);
+          return;
+        }
+        if (!data) return;
+        setPromo(data as PromoSemana);
+        const t = setTimeout(() => setPromoVisible(true), 1800);
+        return () => clearTimeout(t);
+      } catch (err) {
+        console.warn('[CompactFAB] promos_semana fetch exception:', err);
+      }
     };
     fetchPromo();
   }, []);
@@ -180,6 +200,29 @@ export default function CompactFAB() {
     setTimeout(() => setPromoDismissed(true), 400);
   };
 
+  // ── Image compression (prevents huge gallery photos from breaking upload) ──
+  const compressImage = useCallback((dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 480;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else { width = Math.round((width * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }, []);
+
   // ── Waiter request logic ──
   const sendWaiterRequest = useCallback(async (requestType: RequestType, photoUrl?: string | null) => {
     if (waiterStatus === 'sent' || waiterStatus === 'sending' || waiterStatus === 'uploading') return;
@@ -189,11 +232,12 @@ export default function CompactFAB() {
 
     const dbRequestType = requestType === 'call' ? 'call_waiter' : 'request_bill';
     const name = String(customerName || '').trim() || null;
+    const finalSpot = manualSpotRef.current || spot;
 
     try {
       const { error } = await supabasePos.from('waiter_requests').insert({
         account_id: volverCuentaId ? Number(volverCuentaId) : null,
-        spot,
+        spot: finalSpot,
         area: area || 'menu-digital',
         request_type: dbRequestType,
         status: 'pending',
@@ -271,8 +315,13 @@ export default function CompactFAB() {
     const mesaFinal = mesaInput.trim();
     if (!mesaFinal) return;
     setShowMesaInput(false);
-    pendingRequestType.current = 'call';
-    setShowSelfie(true);
+    manualSpotRef.current = mesaFinal;
+    // Si viene de "pedir la cuenta", mostrar el modal de check; si no, selfie
+    if (pendingRequestType.current === 'check') {
+      setShowCheckModal(true);
+    } else {
+      setShowSelfie(true);
+    }
   };
 
   const handleSelfieCapture = async (photoDataUrl: string) => {
@@ -280,12 +329,29 @@ export default function CompactFAB() {
     setWaiterStatus('uploading');
 
     try {
+      // Comprimir imagen antes de subir — crucial para fotos de galeria
+      const compressed = await compressImage(photoDataUrl);
+
+      // Timeout de 15 segundos para conexiones lentas
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const { data, error } = await supabasePos.functions.invoke('upload-selfie', {
-        body: { dataUrl: photoDataUrl },
+        body: { dataUrl: compressed },
       });
+
+      clearTimeout(timeoutId);
+
       if (error || !data?.url) {
         console.error('[CompactFAB] upload-selfie error:', error);
-        lastErrorMessage.current = error?.message || 'Error al subir la foto';
+        const errMsg = error?.message || 'Error al subir la foto';
+        if (error?.code === 'payload_too_large' || error?.code === 'image_too_large') {
+          lastErrorMessage.current = 'La foto es muy pesada. Intenta con una mas pequena.';
+        } else if (error?.code === 'timeout' || error?.name === 'AbortError') {
+          lastErrorMessage.current = 'La conexion esta lenta. Intenta de nuevo.';
+        } else {
+          lastErrorMessage.current = errMsg;
+        }
         await sendWaiterRequest(pendingRequestType.current, undefined);
         return;
       }
@@ -293,7 +359,11 @@ export default function CompactFAB() {
       await sendWaiterRequest(pendingRequestType.current, data.url as string);
     } catch (err) {
       console.error('[CompactFAB] handleSelfieCapture exception:', err);
-      lastErrorMessage.current = err instanceof Error ? err.message : 'Error al procesar la foto';
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        lastErrorMessage.current = 'Tardo mucho en subir. Intenta con una foto mas chica.';
+      } else {
+        lastErrorMessage.current = err instanceof Error ? err.message : 'Error al procesar la foto';
+      }
       await sendWaiterRequest(pendingRequestType.current, undefined);
     }
   };
